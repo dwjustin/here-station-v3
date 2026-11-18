@@ -1,0 +1,30 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Mobile / Node
+node_modules/
+.expo/
+dist/
+build/
+coverage/
+*.log
+
+# Editors / OS
+.DS_Store
+.idea/
+
+# Local map source and generated assets
+/data/
+*.glb
+*.gltf
