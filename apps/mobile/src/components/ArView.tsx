@@ -10,7 +10,7 @@ import {
 } from '@reactvision/react-viro';
 
 import type { ArFrame } from '../localization/localizer';
-import { tokens } from '../theme/token';
+import { colors } from '../theme/token';
 
 /** 위치 추정에는 10Hz면 충분하다. 카메라 변환 이벤트는 매 프레임(60Hz) 온다 */
 const FRAME_INTERVAL_S = 0.1;
@@ -74,5 +74,5 @@ export default function ArView({ onFrame }: { onFrame: (frame: ArFrame) => void 
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
-  placeholder: { flex: 1, backgroundColor: tokens.colors.text },
+  placeholder: { flex: 1, backgroundColor: colors.text },
 });

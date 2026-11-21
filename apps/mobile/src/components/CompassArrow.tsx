@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 
-import { tokens } from '../theme/token';
+import { colors, font } from '../theme/token';
 
 /**
  * 새 목표 각도까지 따라가는 시간. 포즈가 ~10Hz(100ms 간격)로 오므로 그보다 조금 길게 잡고 등속(linear)으로 따라간다.
@@ -60,7 +60,7 @@ export default function CompassArrow({ rotationDeg }: { rotationDeg: number | nu
   );
 }
 
-// 카메라 영상 위에 바로 그리므로 흰 화살표에 어두운 그림자를 둘러 밝은 배경에서도 보이게 한다.
+// 카메라 영상 위에 바로 그리므로 역두 안전모 노란 화살표에 어두운 그림자를 둘러 밝은 배경에서도 보이게 한다.
 // shortcut: 그림자가 모양을 따라가는 건 iOS뿐이다(안드로이드 elevation은 테두리 삼각형에 안 먹음), 안드로이드를 지원할 때 SVG로 바꾼다
 const styles = StyleSheet.create({
   arrow: {
@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: HEAD_HEIGHT,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
-    borderBottomColor: tokens.colors.onCamera,
+    borderBottomColor: colors.helmet,
   },
   shaft: {
     width: 40,
@@ -87,12 +87,12 @@ const styles = StyleSheet.create({
     marginTop: -6, // 머리와 몸통 사이 틈이 비치지 않게 살짝 겹친다
     borderBottomLeftRadius: 10,
     borderBottomRightRadius: 10,
-    backgroundColor: tokens.colors.onCamera,
+    backgroundColor: colors.helmet,
   },
   status: {
-    color: tokens.colors.onCamera,
-    fontSize: tokens.fontSize.body,
-    fontWeight: '700',
+    color: colors.onCamera,
+    fontFamily: font.bold,
+    fontSize: 17,
     textAlign: 'center',
     textShadowColor: 'rgba(0, 0, 0, 0.7)',
     textShadowRadius: 4,
