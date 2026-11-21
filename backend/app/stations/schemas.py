@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -14,6 +14,13 @@ class Station(BaseModel):
 
 class StationListResponse(BaseModel):
     stations: list[Station]
+
+
+class StationPlatform(BaseModel):
+    station_id: str = Field(min_length=1, max_length=100)
+    line_name: str = Field(min_length=1, max_length=20)
+    up_down: Literal["상행", "하행"]
+    platform_poi_id: str = Field(min_length=1, max_length=100, pattern=r"\S")
 
 
 class StationMap(BaseModel):

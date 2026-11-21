@@ -3,6 +3,7 @@ import { Link } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import Button from '../components/ui/Button';
 import { tokens } from '../theme/token';
 
 export default function LandingScreen() {
@@ -39,13 +40,24 @@ export default function LandingScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: tokens.colors.background },
-  content: { flex: 1, padding: tokens.spacing.lg },
-  header: { flexShrink: 0, paddingBottom: tokens.spacing.lg },
-  brand: { color: tokens.colors.primary, fontSize: tokens.fontSize.body, fontWeight: '700' },
-  body: { flex: 1 },
-  introduction: {
+  content: {
+    flexGrow: 1,
+    paddingHorizontal: tokens.spacing.lg,
+    paddingTop: tokens.spacing.xl,
+    paddingBottom: tokens.spacing.lg,
+  },
+  title: {
+    color: tokens.colors.text,
+    fontSize: tokens.fontSize.hero,
+    fontWeight: '700',
+  },
+  accent: { color: tokens.colors.primary },
+  characterSpace: {
+    flex: 1,
+    minHeight: tokens.spacing.xl * 6,
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: tokens.spacing.lg,
-    gap: tokens.spacing.md,
   },
   title: { color: tokens.colors.text, fontSize: tokens.fontSize.hero, fontWeight: '700' },
   description: { color: tokens.colors.muted, fontSize: tokens.fontSize.body },
@@ -55,6 +67,5 @@ const styles = StyleSheet.create({
     color: tokens.colors.muted,
     fontSize: tokens.fontSize.body,
     textAlign: 'center',
-    paddingVertical: tokens.spacing.lg,
   },
 });

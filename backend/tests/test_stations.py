@@ -5,11 +5,13 @@ from unittest.mock import patch
 from urllib.error import URLError
 from urllib.parse import parse_qs, urlparse
 
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from app.main import app
 from app.stations.schemas import Station, StationMap
+from app.stations.service import get_platform_poi_id
 
 
 class StationTests(unittest.TestCase):
@@ -106,6 +108,50 @@ class StationTests(unittest.TestCase):
         for fields in [{"id": ""}, {"name": ""}, {"lines": []}, {"lines": [""]}]:
             with self.subTest(fields=fields), self.assertRaises(ValidationError):
                 Station.model_validate({**self.stations[0], **fields})
+
+    def test_platform_query_and_database_updates_are_used(self):
+        row = {"station_id": "policehosp", "line_name": "3호선", "up_down": "상행", "platform_poi_id": "platform1"}
+        self.rows = [row]
+        self.assertEqual(get_platform_poi_id("policehosp", "3호선", "상행"), "platform1")
+        request = self.urlopen.call_args.args[0]
+        self.assertEqual(urlparse(request.full_url).path, "/rest/v1/station_platforms")
+        params = parse_qs(urlparse(request.full_url).query)
+        self.assertEqual(params["station_id"], ['in.("policehosp")'])
+        self.assertEqual(params["line_name"], ['in.("3호선")'])
+        self.assertEqual(params["up_down"], ['in.("상행")'])
+        self.rows = [{**row, "platform_poi_id": "new-poi"}]
+        self.assertEqual(get_platform_poi_id("policehosp", "3호선", "상행"), "new-poi")
+        self.assertEqual(request.get_header("Apikey"), "test-secret")
+
+    def test_missing_or_invalid_platform_database_rows(self):
+        valid = {"station_id": "policehosp", "line_name": "3호선", "up_down": "상행", "platform_poi_id": "platform1"}
+        for rows, status in [([], 422), ([valid, valid], 502), ([{**valid, "station_id": "other"}], 502),
+                             ([{**valid, "line_name": "2호선"}], 502), ([{**valid, "up_down": "하행"}], 502),
+                             ([{**valid, "platform_poi_id": " "}], 502), ([None], 502), (None, 502)]:
+            with self.subTest(rows=rows):
+                self.rows = rows
+                with self.assertRaises(HTTPException) as error:
+                    get_platform_poi_id("policehosp", "3호선", "상행")
+                self.assertEqual(error.exception.status_code, status)
+
+    def test_platform_database_failure_and_missing_configuration(self):
+        for cause in [URLError("test-secret"), TimeoutError("test-secret")]:
+            self.urlopen.side_effect = cause
+            with self.assertRaises(HTTPException) as error:
+                get_platform_poi_id("policehosp", "3호선", "상행")
+            self.assertEqual(error.exception.status_code, 503)
+            self.assertNotIn("test-secret", error.exception.detail)
+        with patch.dict("os.environ", {"SUPABASE_SECRET_KEY": ""}), self.assertRaises(HTTPException) as error:
+            get_platform_poi_id("policehosp", "3호선", "상행")
+        self.assertEqual(error.exception.status_code, 503)
+
+    def test_platform_filter_values_are_quoted_in_list(self):
+        self.rows = []
+        value = 'custom,"up_down"'
+        with self.assertRaises(HTTPException):
+            get_platform_poi_id(value, "3호선", "상행")
+        params = parse_qs(urlparse(self.urlopen.call_args.args[0].full_url).query)
+        self.assertEqual(params["station_id"], ["in.(" + json.dumps(value) + ")"])
 
 
 class StationMapTests(unittest.TestCase):
