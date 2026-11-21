@@ -17,6 +17,7 @@ export default function RootLayout() {
         <Stack.Screen name="index" options={{ title: '홈', headerShown: false }} />
         <Stack.Screen name="guide" options={{ title: '길 안내' }} />
         <Stack.Screen name="stations" options={{ title: '역 선택' }} />
+        <Stack.Screen name="preview" options={{ title: '경로 미리보기' }} />
       </Stack>
     </RouteSessionProvider>
   );
