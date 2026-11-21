@@ -31,7 +31,7 @@ def synthesize(text: str) -> bytes:
         with urlopen(request, timeout=10) as response:
             audio = response.read()
     except (URLError, TimeoutError):
-        # HTTPError(키 오류·한도 초과)도 URLError다. 앱은 실패하면 기기 TTS로 읽는다.
+        # HTTPError(키 오류·한도 초과)도 URLError다. 앱은 한 번 더 시도하고, 기기 목소리로 바꾸지 않는다.
         raise HTTPException(status_code=502, detail="ElevenLabs 음성 생성에 실패했습니다.") from None
     if not audio:
         raise HTTPException(status_code=502, detail="ElevenLabs가 빈 음성을 돌려주었습니다.")
