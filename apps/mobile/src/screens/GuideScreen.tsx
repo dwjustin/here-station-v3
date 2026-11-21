@@ -262,11 +262,12 @@ function Sheet({ ui, bottom, phase, onAlighted, trip, spoken }: {
 }) {
   const walking = phase === 'legA' || phase === 'legB';
   return (
-    // 화면 가운데 카메라 위에 떠 있는 카드. 바깥 층은 터치를 카메라로 넘기고 카드만 받는다
+    // 카메라 위 아래쪽에 떠 있는 카드. 화살표(화면 높이 약 62%)를 가리지 않게 아래에 둔다.
+    // 바깥 층은 터치를 카메라로 넘기고 카드만 받는다
     <View pointerEvents="box-none" style={{
-      position: 'absolute', top: 0, left: 0, right: 0, bottom,
-      justifyContent: 'center',
-      paddingHorizontal: ui.space.lg,
+      position: 'absolute', top: 0, left: 0, right: 0, bottom: bottom + ui.space.md,
+      justifyContent: 'flex-end',
+      paddingHorizontal: ui.space.md,
     }}>
       <View style={{
         width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', gap: ui.space.md,

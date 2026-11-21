@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Here Station UI 프로토타입</title>
+<style>
+@font-face{font-family:PR;src:url(../assets/fonts/Pretendard-Regular.otf)}
+@font-face{font-family:PB;src:url(../assets/fonts/Pretendard-Bold.otf)}
+:root{--bg:#FFFBF4;--surface:#FBF0D5;--sunken:#F3E6CB;--text:#3B2A24;--muted:#7A625A;--ph:#9C877E;--border:#EADBC0;
+--helmet:#FCBA01;--lip:#E19301;--onh:#5A2D1C;--fur:#8C402B;--scarf:#88B71A;--scarfInk:#4E7A06;--danger:#C9342A}
+*{box-sizing:border-box;margin:0;padding:0;word-break:keep-all;-webkit-tap-highlight-color:transparent}
+body{background:#E9E4DC;font-family:PR;color:var(--text);min-height:100vh;display:flex;justify-content:center;align-items:center;padding:24px}
+.phone{width:390px;height:844px;border-radius:52px;background:var(--bg);position:relative;overflow:hidden;box-shadow:0 0 0 10px #1d1714,0 24px 50px rgba(0,0,0,.25)}
+@media (max-width:500px){body{padding:0}.phone{width:100vw;height:100vh;border-radius:0;box-shadow:none}.island,.home{display:none}}
+.status{position:absolute;top:0;left:0;right:0;height:47px;display:flex;justify-content:space-between;align-items:center;padding:0 34px;font-family:PB;font-size:15px;z-index:9;pointer-events:none}
+.island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:120px;height:34px;border-radius:20px;background:#000;z-index:10}
+.home{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:134px;height:5px;border-radius:3px;background:var(--text);z-index:10;pointer-events:none}
+.screen{position:absolute;inset:0;display:none;flex-direction:column}
+.screen.on{display:flex;animation:in .22s ease-out}
+@keyframes in{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
+.display{font-family:PB;font-size:32px;line-height:40px}.title{font-family:PB;font-size:24px;line-height:32px}
+.headline{font-family:PB;font-size:19px;line-height:26px}.body{font-size:16px;line-height:24px}
+.label{font-family:PB;font-size:14px;line-height:20px}.caption{font-size:13px;line-height:18px}
+/* lip button: 누르면 면이 밑턱만큼 내려간다, 전체 높이는 그대로 */
+.btn{display:block;width:100%;border:0;background:var(--lip);border-radius:16px;padding:0 0 5px;cursor:pointer;font:inherit}
+.btn>span{display:flex;min-height:52px;border-radius:16px;border:2px solid var(--helmet);background:var(--helmet);align-items:center;justify-content:center;color:var(--onh);font-family:PB;font-size:19px}
+.btn:active:not(:disabled){padding:5px 0 0;background:transparent}
+.btn.sec{background:var(--border);padding-bottom:3px}.btn.sec>span{background:var(--bg);border-color:var(--border);color:var(--text)}.btn.sec:disabled{cursor:default}
+.btn:disabled:not(.sec){background:var(--border);cursor:default}.btn:disabled:not(.sec)>span{background:var(--sunken);border-color:var(--sunken);color:var(--muted)}
+.bottom{padding:8px 24px 42px;margin-top:auto}
+.back{width:52px;height:44px;border:0;background:none;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.chev{width:13px;height:13px;border-left:3px solid var(--text);border-bottom:3px solid var(--text);transform:rotate(45deg);margin-left:4px}
+.row{display:flex;align-items:center;gap:16px}
+.val{font-family:PR;font-size:19px;line-height:26px;color:var(--ph);padding:4px 0}
+.field.sel .val{font-family:PB;color:var(--text)}
+.field{min-height:60px;cursor:pointer;border:0;background:none;width:100%;text-align:left;font:inherit;color:inherit;border-radius:12px;position:relative}
+.field.focus::after{content:"";position:absolute;left:30px;right:0;bottom:6px;height:3px;border-radius:3px;background:var(--helmet)}
+.lines{display:flex;justify-content:space-between;position:sticky;top:0;z-index:2;background:var(--bg);padding:10px 0;margin:-10px 0 0}
+.ln{width:36px;height:36px;border-radius:36px;border:2.5px solid currentColor;background:var(--bg)!important;font-family:PB;font-size:16px;cursor:pointer;transition:transform .15s}
+.ln span{color:currentColor!important}
+.ln.on{background:currentColor!important;transform:scale(1.12)}
+.ln.on span{color:#fff!important}
+.screen *{scrollbar-width:none}.screen *::-webkit-scrollbar{display:none}
+.ln:active{transform:scale(.94)}
+.dot{width:14px;height:14px;border-radius:14px;flex:none;position:relative;z-index:1}
+.check{width:24px;height:24px;border-radius:24px;background:var(--scarf);display:none;align-items:center;justify-content:center;flex:none}
+.check i{width:11px;height:6px;margin-top:-2px;border-left:2.5px solid #fff;border-bottom:2.5px solid #fff;transform:rotate(-45deg)}
+.field.sel .check{display:flex}
+.res{min-height:60px;margin:0 -8px;padding:0 8px;border-radius:12px;cursor:pointer;border:0;background:none;width:calc(100% + 16px);text-align:left;font:inherit;color:inherit}
+.res:active{background:var(--sunken)}
+.badge{min-width:26px;height:26px;border-radius:26px;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-family:PB;font-size:14px}
+/* guide */
+.cam{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.25),rgba(0,0,0,0) 30%),repeating-linear-gradient(90deg,transparent 0 58px,rgba(255,255,255,.06) 58px 60px),radial-gradient(ellipse at 50% 38%,#d9d5cc 0,#9a948a 35%,#4a4640 75%,#2a2724 100%)}
+.cam::after{content:"";position:absolute;left:-10%;right:-10%;top:52%;bottom:0;background:linear-gradient(180deg,#8b857a,#5b564f);clip-path:polygon(38% 0,62% 0,100% 100%,0 100%)}
+.light{position:absolute;top:120px;width:70px;height:8px;border-radius:4px;background:#fffbe9;box-shadow:0 0 18px #fff6c8}
+.top{position:absolute;top:55px;left:16px;right:16px;display:flex;align-items:center;gap:16px;z-index:5}
+.round{width:52px;height:52px;border-radius:52px;background:var(--bg);display:flex;align-items:center;justify-content:center;flex:none;border:0;cursor:pointer}
+.bars{flex:1;display:flex;gap:4px}.bars i{flex:1;height:10px;border-radius:9px;background:rgba(255,255,255,.45);transition:background .3s}
+.pill{height:52px;padding:0 16px;border-radius:52px;background:var(--bg);display:flex;align-items:center;flex:none;border:0;cursor:pointer;font-family:PB;font-size:14px;color:var(--text)}
+.pill.on{background:var(--helmet);color:var(--onh)}
+.arrow{position:absolute;left:50%;top:44%;display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 2px 6px rgba(0,0,0,.55));z-index:4;transition:transform .6s ease}
+.arrow .h{width:0;height:0;border-left:52px solid transparent;border-right:52px solid transparent;border-bottom:64px solid var(--helmet)}
+.arrow .s{width:40px;height:74px;margin-top:-6px;border-radius:0 0 10px 10px;background:var(--helmet)}
+/* 카메라 위에 떠 있는 카드. 배경만 70% 불투명, 글자·버튼은 그대로. 화살표(화면 62%)를 가리지 않게 아래쪽에 띄운다 */
+.sheet{position:absolute;left:16px;right:16px;bottom:34px;background:rgba(255,251,244,.7);border-radius:24px;padding:24px;z-index:6;display:flex;flex-direction:column;gap:16px}
+.hint{position:absolute;top:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.6);color:#fff;font-size:12px;padding:6px 10px;border-radius:8px;z-index:20;white-space:nowrap;pointer-events:none}
+</style></head><body>
+<div class="phone" id="phone">
+  <div class="island"></div>
+  <div class="status" id="status"><span>9:41</span><span>●●● ▮</span></div>
+
+  <!-- 1. 시작 -->
+  <section class="screen on" id="landing">
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:70px 24px 0">
+      <div style="width:350px;max-width:100%;height:304px;position:relative;display:flex;justify-content:center;align-items:flex-end">
+        <div style="position:absolute;top:24px;width:298px;height:298px;border-radius:50%;background:var(--surface)"></div>
+        <img src="../assets/yeokdu/yeokdu_02_hello.svg" alt="" style="width:304px;height:304px;position:relative">
+      </div>
+      <h1 class="display" style="margin-top:24px;text-align:center">어디로 <span style="color:var(--fur)">안내할까요?</span></h1>
+      <p class="body" style="color:var(--muted);margin-top:8px">출발역부터 도착역까지 함께해요.</p>
+    </div>
+    <div class="bottom" style="display:flex;flex-direction:column;gap:12px"><button class="btn" onclick="go('stations')"><span>길 안내 시작하기</span></button><button class="btn sec" disabled title="프로토타입에서는 동작하지 않음"><span>말로 길 찾기</span></button></div>
+  </section>
+
+  <!-- 2. 역 선택 -->
+  <section class="screen" id="stations">
+    <div style="padding:47px 0 0 8px"><button class="back" onclick="go('landing')" aria-label="뒤로"><div class="chev"></div></button></div>
+    <div style="padding:0 24px;flex:1;overflow:auto">
+      <h1 class="title" style="margin:8px 0 24px">어디로 가시나요?</h1>
+      <div style="position:relative">
+        <div style="position:absolute;left:6px;top:30px;bottom:30px;width:2px;background:var(--border)"></div>
+        <button class="row field" id="f-origin" onclick="focusField('origin')">
+          <div class="dot" style="border:4px solid var(--scarf);background:var(--bg)"></div>
+          <div style="flex:1"><div class="caption" style="color:var(--muted)">출발역</div><div class="val" id="v-origin">역을 골라 주세요</div></div>
+          <div class="check"><i></i></div>
+        </button>
+        <div style="height:1px;background:var(--border);margin-left:30px"></div>
+        <button class="row field" id="f-destination" onclick="focusField('destination')">
+          <div class="dot" style="background:var(--helmet)"></div>
+          <div style="flex:1"><div class="caption" style="color:var(--muted)">도착역</div><div class="val" id="v-destination">역을 골라 주세요</div></div>
+          <div class="check"><i></i></div>
+        </button>
+      </div>
+      <p class="label" id="ask" style="margin:24px 0 12px;color:var(--muted)"></p>
+      <div class="lines" id="lines" role="tablist" aria-label="노선"></div>
+      <div id="results" style="margin-top:8px"></div>
+    </div>
+    <div class="bottom" style="display:flex;flex-direction:column;gap:8px">
+      <div id="notice" class="row" style="gap:8px;display:none"><img src="../assets/yeokdu/yeokdu_05_confused.svg" alt="" style="width:44px;height:44px"><p class="body" style="flex:1;color:var(--muted)">출발역과 도착역은 다르게 선택해 주세요.</p></div>
+      <button class="btn" id="find" disabled onclick="findRoute()"><span>길 찾기</span></button>
+    </div>
+  </section>
+
+  <!-- 3. 길 안내 -->
+  <section class="screen" id="guide">
+    <div class="cam" id="cam"><div class="light" style="left:90px"></div><div class="light" style="left:230px"></div></div>
+    <div class="top">
+      <button class="round" onclick="go('stations')" aria-label="뒤로"><div class="chev"></div></button>
+      <div class="bars" role="progressbar" aria-label="진행"><i id="b0"></i><i id="b1"></i><i id="b2"></i></div>
+      <button class="pill" id="vw" onclick="toggleWalk()">가상 보행</button>
+    </div>
+    <div class="arrow" id="arrow"><div class="h"></div><div class="s"></div></div>
+    <div class="sheet" id="sheet"></div>
+  </section>
+
+  <div class="home"></div>
+</div>
+
+<script>
+const LINE = {'1':'#0052A4','2':'#00A84D','3':'#EF7C1C','4':'#00A5DE','5':'#996CAC','6':'#CD7C2F','7':'#747F00','8':'#E6186C','9':'#BDB092'};
+// shortcut: 노선별 서울 구간 일부만 넣은 예시. 실제 앱에 넣을 땐 백엔드 역 목록에서 받아야 한다
+const BY_LINE = {
+ '1':'서울역 시청 종각 종로3가 종로5가 동대문 동묘앞 신설동 제기동 청량리 회기 용산 노량진 대방 신길 영등포 신도림 구로',
+ '2':'시청 을지로입구 을지로3가 을지로4가 동대문역사문화공원 신당 상왕십리 왕십리 한양대 뚝섬 성수 건대입구 구의 강변 잠실나루 잠실 잠실새내 종합운동장 삼성 선릉 역삼 강남 교대 서초 방배 사당 낙성대 서울대입구 봉천 신림 신대방 구로디지털단지 대림 신도림 문래 영등포구청 당산 합정 홍대입구 신촌 이대 아현 충정로',
+ '3':'구파발 연신내 불광 녹번 홍제 무악재 독립문 경복궁 안국 종로3가 을지로3가 충무로 동대입구 약수 금호 옥수 압구정 신사 잠원 고속터미널 교대 남부터미널 양재 매봉 도곡 대치 학여울 대청 일원 수서 가락시장 경찰병원 오금',
+ '4':'노원 창동 쌍문 수유 미아 미아사거리 길음 성신여대입구 한성대입구 혜화 동대문 동대문역사문화공원 충무로 명동 회현 서울역 숙대입구 삼각지 신용산 이촌 동작 이수 사당',
+ '5':'김포공항 까치산 목동 오목교 영등포구청 여의도 여의나루 마포 공덕 애오개 충정로 서대문 광화문 종로3가 을지로4가 동대문역사문화공원 청구 신금호 행당 왕십리 마장 답십리 장한평 군자 아차산 광나루 천호 강동',
+ '6':'응암 디지털미디어시티 월드컵경기장 마포구청 망원 합정 상수 광흥창 대흥 공덕 효창공원앞 삼각지 녹사평 이태원 한강진 버티고개 약수 청구 신당 동묘앞 창신 보문 안암 고려대 월곡 상월곡 돌곶이 석계 태릉입구',
+ '7':'노원 중계 하계 공릉 태릉입구 먹골 중화 상봉 면목 사가정 용마산 중곡 군자 어린이대공원 건대입구 뚝섬유원지 청담 강남구청 학동 논현 반포 고속터미널 내방 이수 남성 숭실대입구 상도 장승배기 신대방삼거리 보라매 신풍 대림 남구로 가산디지털단지',
+ '8':'암사 천호 강동구청 몽촌토성 잠실 석촌 송파 가락시장 문정 장지 복정 산성 남한산성입구 단대오거리 신흥 수진 모란',
+ '9':'개화 김포공항 마곡나루 가양 염창 당산 국회의사당 여의도 샛강 노량진 노들 흑석 동작 구반포 신반포 고속터미널 사평 신논현 언주 선정릉 삼성중앙 봉은사 종합운동장 석촌 송파나루 한성백제 올림픽공원 중앙보훈병원'};
+const LINES_OF = {}; // 역 이름 → 지나는 노선들 (환승 표시용)
+for(const [l,s] of Object.entries(BY_LINE)) for(const n of s.split(' ')) (LINES_OF[n] ??= []).push(l);
+const sel = {origin:null, destination:null};
+let focused = 'origin', line = '2';
+
+function go(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on', s.id===id));
+  document.getElementById('status').style.color = id==='guide' ? '#fff' : '';
+  if(id==='guide') startGuide(); else stopWalk();
+  }
+
+document.getElementById('lines').innerHTML = Object.keys(BY_LINE).map(l=>
+  `<button class="ln" role="tab" data-l="${l}" aria-label="${l}호선" style="background:${LINE[l]};color:${LINE[l]}" onclick="setLine('${l}')"><span style="color:#fff">${l}</span></button>`).join('');
+function setLine(l){ line=l; render(); }
+function focusField(k){ focused=k; const cur=sel[k]; if(cur && !LINES_OF[cur].includes(line)) line=LINES_OF[cur][0]; render(); }
+function render(){
+  document.querySelectorAll('.ln').forEach(b=>{ const on=b.dataset.l===line; b.classList.toggle('on',on); b.setAttribute('aria-selected',on); });
+  for(const k of ['origin','destination']) document.getElementById('f-'+k).classList.toggle('focus', k===focused);
+  document.getElementById('ask').textContent = (focused==='origin'?'출발역':'도착역')+'을 골라 주세요';
+  document.getElementById('results').innerHTML = BY_LINE[line].split(' ').map(n=>{
+    const others = LINES_OF[n].filter(l=>l!==line), picked = sel[focused]===n;
+    return `<button class="row res" onclick="pick('${n}')" style="${picked?'background:var(--surface)':''}"><span class="badge" style="background:${LINE[line]}">${line}</span><span class="body" style="flex:1;font-family:PB">${n}</span><span style="display:flex;gap:4px">${others.map(l=>`<span class="badge" style="background:${LINE[l]};min-width:22px;height:22px;font-size:12px">${l}</span>`).join('')}</span></button>`; }).join('');
+}
+function pick(name){ sel[focused]=name; update();
+  if(focused==='origin' && !sel.destination) focusField('destination');
+  document.querySelector('#stations > div:nth-child(2)').scrollTo({top:0,behavior:'smooth'}); }
+function update(){
+  for(const k of ['origin','destination']){ document.getElementById('f-'+k).classList.toggle('sel', !!sel[k]);
+    document.getElementById('v-'+k).textContent = sel[k] ?? '역을 골라 주세요'; }
+  const same = sel.origin && sel.origin===sel.destination;
+  document.getElementById('notice').style.display = same ? 'flex' : 'none';
+  document.getElementById('find').disabled = !sel.origin || !sel.destination || same;
+  render();
+}
+render();
+
+function findRoute(){ const b=document.getElementById('find'); b.disabled=true; b.firstChild.textContent='길 찾는 중…';
+  setTimeout(()=>{ b.firstChild.textContent='길 찾기'; update(); go('guide'); }, 700); }
+
+// 길 안내: 출발역 걷기 → 열차 → 도착역 걷기 → 도착
+let phase=0, walk=null, angle=-24;
+const PHASES = ['origin','train','destination','arrived'];
+function startGuide(){ phase=0; paint(); }
+function paint(){
+  const p = PHASES[phase], bars=[0,1,2].map(i=>document.getElementById('b'+i));
+  const cur = Math.min(phase,2);
+  bars.forEach((b,i)=>b.style.background = (i<cur||p==='arrived') ? 'var(--scarf)' : i===cur ? 'var(--helmet)' : '');
+  document.getElementById('arrow').style.display = (p==='origin'||p==='destination') ? 'flex' : 'none';
+  document.getElementById('vw').style.display = (p==='origin'||p==='destination') ? 'flex' : 'none';
+  document.getElementById('cam').style.filter = p==='train' ? 'brightness(.8)' : '';
+  const s = document.getElementById('sheet');
+  if(p==='origin'||p==='destination') s.innerHTML = `<div class="row"><img src="../assets/yeokdu/yeokdu_03_map.svg" alt="" style="width:64px;height:64px"><div style="flex:1;display:flex;flex-direction:column;gap:4px"><div class="label" style="color:var(--scarfInk)">${p==='origin'?'출발역':'도착역'} 안내</div><div class="title">화살표 방향을 확인하세요</div></div></div><p class="caption" style="color:var(--muted)">프로토타입: 위 '가상 보행'을 누르면 다음 단계로 걸어가요</p>`;
+  else if(p==='train') s.innerHTML = `<div class="row"><img src="../assets/yeokdu/yeokdu_01_basic.svg" alt="" style="width:72px;height:72px"><div style="flex:1;display:flex;flex-direction:column;gap:4px"><div class="label" style="color:var(--muted)">열차 이동 중</div><div class="title">${sel.destination||'잠원'}역에서 1-1 문으로 내리세요</div></div></div><button class="btn" onclick="next()"><span>내렸어요</span></button>`;
+  else s.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:8px 0 16px"><img src="../assets/yeokdu/yeokdu_04_cheer.svg" alt="" style="width:140px;height:140px"><div class="display">도착했습니다</div></div><p class="caption" style="color:var(--muted);text-align:center">프로토타입: 왼쪽 위 뒤로 가기로 역 선택부터 다시 볼 수 있어요</p>`;
+}
+function next(){ stopWalk(); phase=Math.min(phase+1,3); paint(); }
+function toggleWalk(){ if(walk){ stopWalk(); return; }
+  const pill=document.getElementById('vw'); pill.classList.add('on'); pill.textContent='걷는 중';
+  let t=0; walk=setInterval(()=>{ t++; angle = -24 + Math.sin(t/2)*30;
+    document.getElementById('arrow').style.transform=`translate(-50%,0) rotate(${angle}deg)`;
+    if(t>=8) next(); }, 400); }
+function stopWalk(){ clearInterval(walk); walk=null; const pill=document.getElementById('vw'); pill.classList.remove('on'); pill.textContent='가상 보행'; }
+document.getElementById('arrow').style.transform='translate(-50%,0) rotate(-24deg)';
+// 창이 낮으면 폰 프레임을 줄여 한 화면에 보이게 한다 (폰 화면 폭에서는 전체 화면이라 제외)
+function fit(){ const p=document.getElementById('phone'); p.style.zoom = innerWidth>500 ? Math.min(1,(innerHeight-40)/864,(innerWidth-40)/410) : 1; }
+addEventListener('resize', fit); fit();
+</script>
+</body></html>
