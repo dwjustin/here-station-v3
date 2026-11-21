@@ -14,7 +14,7 @@
 
 `StationSelectionScreen`의 길 찾기 버튼은 선택된 출발·도착 역 ID로 이 함수를 호출한다. 두 역 미선택·동일 역·요청 중에는 버튼이 비활성화되고, 요청 중에는 역 입력도 잠근다. 대기 중에는 버튼에 로딩 스피너와 문구를 표시한다. 완료율을 알 수 없으므로 퍼센트를 표시하지 않는다.
 
-성공하면 응답을 `RouteSessionProvider`의 공유 상태에 저장한 뒤 `/guide`로 이동한다. `GuideScreen`은 카메라와 현재 노드 → 다음 노드 안내 카드를 표시한다. 노드 진행 시 엣지 안내와 목표가 함께 바뀐다. 실패하면 역 선택 화면에 남아 오류를 표시한다. 선택을 변경하면 이전 결과를 지운다. 상태는 메모리에만 보관하며 경로 없이 안내 화면에 진입하면 역 선택으로 이동한다. 첫 시작 화면은 `LandingScreen`이다. 카메라 위의 나침반 표시는 연결했지만 실제 위치·방향 추정과 자동 도착 판정은 TODO다. 개발 콘솔에는 `[routes:request]`, `[routes:response]`, `[routes:error]`가 표시된다.
+성공하면 응답을 `RouteSessionProvider`의 공유 상태에 저장한 뒤 `/guide`로 이동한다. `GuideScreen`은 카메라와 출발역 보행·탑승·하차·도착역 보행 안내 카드를 표시한다. 선택한 역·방면·추천 문·보행거리를 서버 응답에서 읽는다. 위치 확인과 탑승·하차 버튼으로 단계를 진행한다. 실패하면 역 선택 화면에 남아 오류를 표시한다. 선택을 변경하면 이전 결과를 지운다. 상태는 메모리에만 보관하며 경로 없이 안내 화면에 진입하면 역 선택으로 이동한다. 첫 시작 화면은 `LandingScreen`이다. 카메라 위의 나침반 표시는 연결했지만 실제 위치·방향 추정과 자동 도착 판정은 TODO다. 개발 콘솔에는 `[routes:request]`, `[routes:response]`, `[routes:error]`가 표시된다.
 
 방향 계산·카메라 위 나침반의 입력·출력과 팀별 TODO는 [방향 계산 연결부](../navigation/README.md)를 참고한다.
 
@@ -25,7 +25,7 @@ import { requestRoute } from './routes';
 
 async function handleRoutePress() {
   try {
-    const route = await requestRoute(apiBaseUrl, 'ilwon', 'hakyeoul');
+    const route = await requestRoute(apiBaseUrl, 'hongje', 'jamwon');
     // TODO: route를 화면 상태에 저장하고 경로 목록을 표시한다.
   } catch (error) {
     // TODO: 요청 실패를 화면에 표시한다.
@@ -35,8 +35,8 @@ async function handleRoutePress() {
 // 버튼 연결: onPress={handleRoutePress}
 ```
 
-현재 mock API는 일원(`ilwon`) → 학여울(`hakyeoul`)만 지원하며 양쪽 출구는 1번으로 고정이다. 역 이름 대신 역 ID를 전달한다. 화면을 연결할 때 예시 상수 대신 사용자가 선택한 역 ID를 넘긴다.
+현재 API는 양쪽 지도와 방면별 승강장 연결이 있는 직통 3호선 여정을 지원하며 양쪽 출구는 1번으로 고정이다. 역 이름 대신 역 ID를 전달한다. 화면을 연결할 때 예시 상수 대신 사용자가 선택한 역 ID를 넘긴다.
 
 서버 주소에는 `/routes`를 붙이지 않는다. 실제 휴대폰에서는 `localhost`가 휴대폰 자신을 뜻하므로 같은 네트워크에서 접근 가능한 개발 PC의 LAN 주소(예: `http://192.168.0.10:8000`)를 사용한다. 백엔드는 `--host 0.0.0.0`으로 실행해야 하며, 위 IP는 예시이므로 실제 PC 주소로 바꾼다.
 
-`RouteResponse`는 현재 `contracts/examples/route.json`에서 타입만 가져온 초안이며 JSON 파일 자체를 앱에 포함하지 않는다. 런타임 응답 스키마 검증은 하지 않는다. 지도별 필드 등 타입은 예시 내용에 종속되므로 API 형식이 바뀌면 함께 조정한다. 지도 파일 다운로드, 위치 추적, 화면·버튼은 이 함수에 포함하지 않는다.
+`RouteResponse`는 v2의 `trip`·`legs` 형식이다. 요청한 역 ID와 응답의 역 ID·구간 순서를 확인하고 여정 메타데이터·격자·좌표·칸 배열·승강장 영역을 검증한다. 과거 mock `nodes`·`edges` 응답은 거부한다. `decodeLeg()`는 base64 칸·높이·방위·승강장 영역을 typed array로 변환한다. 현재 화면은 여정 요약과 구간 목표를 표시하며, 위치 추정 팀이 실제 지도 방향장과 위치를 연결해야 한다.

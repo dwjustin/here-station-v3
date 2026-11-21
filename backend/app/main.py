@@ -3,6 +3,7 @@ from typing import Any
 from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel, Field
 
+from app.routing.schemas import RouteResponse
 from app.routing.service import find_route
 from app.stations.schemas import StationListResponse
 from app.stations.service import search_stations
@@ -15,8 +16,8 @@ class HealthResponse(BaseModel):
 
 
 class RouteRequest(BaseModel):
-    origin_station_id: str = Field(min_length=1, max_length=100)
-    destination_station_id: str = Field(min_length=1, max_length=100)
+    origin_station_id: str = Field(min_length=1, max_length=100, pattern=r"^[\w-]+$")
+    destination_station_id: str = Field(min_length=1, max_length=100, pattern=r"^[\w-]+$")
 
 
 @app.get("/health", response_model=HealthResponse, tags=["health"])
@@ -29,9 +30,10 @@ def get_stations(q: str = Query(default="", max_length=100)) -> StationListRespo
     return StationListResponse(stations=search_stations(q))
 
 
-@app.post("/routes", tags=["routes"], summary="예시 경로 조회 (일원 → 학여울)")
+@app.post("/routes", response_model=RouteResponse, tags=["routes"], summary="직통 여정의 승하차 문과 칸별 안내 방향 조회")
 def get_route(request: RouteRequest) -> dict[str, Any]:
-    route = find_route(request.origin_station_id, request.destination_station_id)
-    if route is None:
-        raise HTTPException(status_code=404, detail="현재 mock 경로는 ilwon → hakyeoul만 지원합니다.")
+    try:
+        route = find_route(request.origin_station_id, request.destination_station_id)
+    except FileNotFoundError as error:
+        raise HTTPException(status_code=503, detail="역 지도 파일이 없습니다 (로컬 MAP_DIR 또는 Storage).") from error
     return route

@@ -9,64 +9,67 @@ import GuideCamera from '../components/GuideCamera';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import { calculateCompassDirection } from '../navigation/calculateCompassDirection';
-import { advanceGuidance } from '../navigation/advanceGuidance';
+import { advanceGuidance, type GuidanceEvent, type GuidancePhase } from '../navigation/advanceGuidance';
 import type { RouteResponse } from '../api/routes';
 
 export default function GuideScreen() {
   const { route } = useRouteSession();
-  if (!route || route.nodes.length === 0) return <Redirect href="/stations" />;
+  if (!route || route.legs.length !== 2) return <Redirect href="/stations" />;
   return <GuidanceView route={route} />;
 }
 
 function GuidanceView({ route }: { route: RouteResponse }) {
-  const [currentNodeIndex, setCurrentNodeIndex] = useState(0);
-  const current = route.nodes[currentNodeIndex];
-  const target = route.nodes[currentNodeIndex + 1];
-  const edge = route.edges[currentNodeIndex];
-  const arrived = !target;
-  const maps: Record<string, { content_sha256: string }> = route.maps;
-  const targetMap = target ? maps[target.station_id] : undefined;
+  const [phase, setPhase] = useState<GuidancePhase>('originWalk');
+  const { trip } = route;
+  const leg = phase === 'originWalk' ? route.legs[0] : phase === 'destinationWalk' ? route.legs[1] : null;
   const direction = calculateCompassDirection({
-    // TODO(위치 추정 팀): GPS 없이 추정한 위치와 지도에 정렬된 카메라 방위를 연결한다.
+    // TODO(위치 추정 팀): 현재 구간의 지도·방향장에 정렬한 위치와 카메라 방위를 연결한다.
     pose: null,
-    target: target && targetMap ? {
-      stationId: target.station_id,
-      mapRevision: targetMap.content_sha256,
-      level: target.level,
-      position: target.position,
+    target: leg ? {
+      stationId: leg.station_id,
+      mapRevision: leg.map_revision,
+      level: leg.goal.level,
+      position: { x: leg.goal.x, z: leg.goal.z, h: leg.goal.h },
     } : null,
-    movementKind: edge?.kind ?? null,
+    movementKind: leg ? 'walk' : null,
   });
-
-  function handleNodeArrival(nodeId: string) {
-    setCurrentNodeIndex((index) => advanceGuidance(route, index, nodeId));
-  }
-  // TODO(위치 추정 팀): 같은 역·지도·층에서 arrival_radius와 추적 상태로 도착을 판정한 뒤
-  // handleNodeArrival(target.id)를 호출한다. 열차·층 이동은 별도 판정하고 구독은 종료 시 해제한다.
+  const instructions: Record<GuidancePhase, string> = {
+    originWalk: `${trip.origin_station_name}역 1번 출구에서 ${trip.direction} 방면 승강장으로 이동하세요.`,
+    platform: `${trip.direction} 방면 열차를 타세요. 추천 승차 위치는 ${trip.door_no}입니다.`,
+    onTrain: `${trip.destination_station_name}역에서 내리세요.`,
+    destinationPosition: `${route.legs[1].platform?.access_name} 앞에서 계단을 올라가는 방향을 바라봐 주세요.`,
+    destinationWalk: `${trip.destination_station_name}역 1번 출구로 이동하세요.`,
+    arrived: '목적지에 도착했습니다.',
+  };
+  const actions: Partial<Record<GuidancePhase, { label: string; event: GuidanceEvent }>> = {
+    originWalk: { label: '승강장에 도착했어요', event: 'platformReached' },
+    platform: { label: '탔어요', event: 'boarded' },
+    onTrain: { label: '내렸어요', event: 'alighted' },
+    destinationPosition: { label: '계단 앞에서 안내 시작', event: 'positionConfirmed' },
+    destinationWalk: { label: '1번 출구에 도착했어요', event: 'exitReached' },
+  };
+  const action = actions[phase];
 
   return (
     <SafeAreaView style={styles.screen} edges={['left', 'right', 'bottom']}>
       <View style={styles.camera}>
-        <GuideCamera rotationDeg={arrived ? null : direction.rotationDeg} />
+        <GuideCamera rotationDeg={leg ? direction.rotationDeg : null} />
       </View>
       <View style={styles.cardArea}>
         <Card style={styles.card}>
           <ScrollView contentContainerStyle={styles.cardContent}>
             <Text style={styles.description}>
-              {route.is_mock ? '예시 경로 · ' : ''}
-              {arrived ? '안내 완료' : `구간 ${currentNodeIndex + 1} / ${route.edges.length}`}
+              {trip.origin_station_name} → {trip.destination_station_name} · {trip.line_name} {trip.up_down}
             </Text>
-            <Text style={styles.title} accessibilityLiveRegion="polite">
-              {arrived ? '목적지에 도착했습니다.' : edge?.instruction ?? '다음 지점으로 이동하세요.'}
-            </Text>
+            <Text style={styles.title} accessibilityLiveRegion="polite">{instructions[phase]}</Text>
             <Text style={styles.description}>
-              {current.name} ({current.level})
-              {target ? ` → ${target.name} (${target.level})` : ''}
+              출발역 보행 {Math.round(trip.origin_walk_m)}m · 도착역 보행 {Math.round(trip.destination_walk_m)}m
             </Text>
-            {/* shortcut: 도착 판정 연결 전 개발용 수동 진행이며, 실제 위치 추정 연결 시 제거한다. */}
-            {__DEV__ && target ? (
-              <Button label="다음 노드 도달 테스트" onPress={() => handleNodeArrival(target.id)} />
+            {phase !== 'arrived' ? (
+              <Text style={styles.description}>현재 위치는 자동으로 확인되지 않습니다. 위치와 승강장 표지판을 직접 확인한 뒤 진행해 주세요.</Text>
             ) : null}
+            {/* shortcut: 도착을 사용자가 확인하며, 위치 추정 연결 시 보행 도착 이벤트를 자동 판정한다. */}
+            {action ? <Button label={action.label} onPress={() => setPhase((current) => advanceGuidance(current, action.event))} /> : null}
           </ScrollView>
         </Card>
       </View>

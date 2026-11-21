@@ -1,6 +1,6 @@
 # 모바일
 
-React Native + TypeScript + Expo Development Build로 작성한 모바일 앱이다. 역 검색, mock 경로 요청, 카메라와 안내 카드의 기본 흐름이 연결되어 있다.
+React Native + TypeScript + Expo Development Build로 작성한 모바일 앱이다. 역 검색, 선택한 역에 따른 실제 경로 요청, 카메라와 여정 안내 카드가 연결되어 있다. 위치 추적 연결 전이므로 도착·탑승·하차는 사용자가 확인한다.
 
 담당 범위:
 

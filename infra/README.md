@@ -42,3 +42,9 @@ Supabase 서버 비밀 키와 DB 비밀번호는 서버 환경 변수로 관리�
 docker build -t here-station-api -f backend/Dockerfile .
 docker run --rm --env-file .env -p 8000:8000 here-station-api
 ```
+
+## 실제 경로 계산 데이터
+
+`supabase/migrations/20261120220000_create_station_platforms.sql`은 v2의 방면별 승강장 테이블·연결 데이터다. 기존 v2 DB에 적용했다면 재실행하지 않는다. 새 DB에서는 기존 마이그레이션 다음에 적용한다. RLS를 켜고 서버 역할만 접근한다. 경찰병원 연결은 도면 추론이므로 현장 검증 전이다.
+
+로컬 지도는 저장소 루트 `data/maps/{station_id}.json`에 준비하며 Docker Compose가 읽기 전용 마운트한다. `DATA_GO_KR_SERVICE_KEY`를 서버 `.env`에 설정한다. `RENDER=true`에서는 `STORAGE_BUCKET` 루트의 `{station_id}.json`을 읽는다. 실제 지도 파일과 서버 키는 커밋하지 않는다. 상세 설정과 지원 범위는 [경로 계산](../backend/app/routing/README.md)을 참고한다.

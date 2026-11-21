@@ -12,4 +12,4 @@
 
 층별 PNG는 사용하지 않는다. 역사 형태를 그릴 경우 표시용 GLB 또는 보행 데이터 기반 렌더러가 필요하다. 원본 GLB를 앱에 항상 내려받을지는 화면 요구사항에 따라 결정한다.
 
-현재 백엔드는 `/health`, Supabase의 `stations` 테이블을 조회하는 `GET /stations`, mock 경로를 반환하는 `POST /routes`를 구현했다. Supabase에는 `stations`·`station_maps` 테이블과 외래 키가 있고 역 다섯 개가 등록되어 있다. 검색은 서버 전용 키로 역 정보만 조회하며 지도 데이터는 읽지 않는다. 경로 API는 출발·도착 역 ID를 받아 일원 → 학여울 예시 JSON을 반환한다. 지도 파일 제공, 실제 경로 계산, 위치 추정은 후속 작업이다.
+현재 백엔드는 `/health`, Supabase `stations`를 조회하는 `GET /stations`, 선택한 역의 실제 보행 방향장을 계산하는 `POST /routes`를 구현했다. 역 DB와 방면별 `station_platforms`를 읽고, 로컬 `data/maps` 또는 Storage의 v2 보행 지도로 두 구간을 계산한다. 직통 3호선·양쪽 1번 출구를 지원한다. 응답은 `trip`·`legs`이며 상세 형식은 `contracts/README.md`에 있다. 위치/방향 추정·자동 도착 판정은 TODO이며, 앱은 사용자 확인으로 단계를 진행한다.

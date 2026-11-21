@@ -12,7 +12,7 @@ services:
 
     volumes:
       - ../backend/app:/app/backend/app
-      - ../contracts/examples:/app/contracts/examples:ro
+      - ../data/maps:/app/data/maps:ro
 
     command:
       - uvicorn

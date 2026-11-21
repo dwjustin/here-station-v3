@@ -50,13 +50,13 @@ export default function StationSelectionScreen() {
       >
         <Text style={styles.title}>어디로 가시나요?</Text>
         <Text style={styles.description}>출발역과 도착역을 입력해 주세요.</Text>
-        <StationPicker label="출발역" placeholder="예: 일원" apiBaseUrl={apiBaseUrl}
+        <StationPicker label="출발역" placeholder="예: 홍제" apiBaseUrl={apiBaseUrl}
           selectedStation={origin} disabled={loading} onSelect={(station) => {
             setOrigin(station);
             setRoute(null);
             setError(null);
           }} />
-        <StationPicker label="도착역" placeholder="예: 학여울" apiBaseUrl={apiBaseUrl}
+        <StationPicker label="도착역" placeholder="예: 잠원" apiBaseUrl={apiBaseUrl}
           selectedStation={destination} disabled={loading} onSelect={(station) => {
             setDestination(station);
             setRoute(null);

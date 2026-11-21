@@ -2,7 +2,7 @@
 
 지하철역 실내 길안내 앱. 새 코드와 데이터 형식을 팀이 함께 정하기 위한 시작 레포지토리다.
 
-v2의 `d17331b`(서버 기본 구조) 다음 커밋인 `93ee544`(모바일 안내·역 조회 API)를 재현한 단계다. 초기 패키지와 실행 스크립트는 해당 커밋을 기준으로 하며, iOS 개발 빌드 실행 오류 수정은 별도로 반영했다.
+v2의 모바일 안내·역 조회 구조를 바탕으로, 사용자가 선택한 출발·도착역의 지도로 실제 경로를 계산한다. 위치 추적과 카메라 방향 계산은 팀 연결용 TODO다.
 
 ## 기술과 역할
 
@@ -86,7 +86,7 @@ contracts 바꾸게 되면 알려주세용(코드 반영해야됨.).
 - 초기 위치·방향 설정, 센서 기반 추적·오차 보정, 추적 시작·종료를 구현한다.
 - 추적 코드: `apps/mobile/src/localization/`에 추가한다.
 - 방향 계산: `apps/mobile/src/navigation/calculateCompassDirection.ts`의 TODO를 구현한다.
-- 연결: `apps/mobile/src/screens/GuideScreen.tsx`의 `pose`에 추정 결과를 전달하고, 도착 판정 후 `handleNodeArrival(nodeId)`를 호출한다. 층·열차 이동과 추적 불가 상태도 처리한다.
+- 연결: `apps/mobile/src/screens/GuideScreen.tsx`의 `pose`에 추정 결과를 전달하고, 실제 보행 도착 판정 후 `advanceGuidance`의 `platformReached`·`exitReached` 이벤트를 연결한다. 층·열차 이동과 추적 불가 상태도 처리한다.
 
 입출력과 연결 예시: [방향·도착 처리](apps/mobile/src/navigation/README.md).
 
@@ -125,19 +125,27 @@ curl --get http://localhost:8000/stations --data-urlencode 'q=일원'
 
 `GET /stations`는 등록된 역 전체를 반환한다. `q`는 최대 100자이며, 역 이름 또는 ID로 부분 검색한다. 앞뒤 공백과 영문 대소문자는 무시하고 `일원역`처럼 접미사 `역`을 붙여도 검색된다. 검색 결과가 없으면 `200`과 빈 `stations` 배열을 반환한다. 출발·도착 선택에 같은 API를 사용하며 도착역을 출발역에 따라 제한하지 않는다.
 
-역 정보 모델은 `backend/app/stations/schemas.py`에 있다. `search_stations()`는 Supabase REST API를 통해 `stations` 테이블에서 `id`, `name`, `lines`만 조회하며 DB에서 검색한다. 새 역을 테이블에 등록하면 다음 검색에 반영된다. 원본 지도 파일을 업로드하는 것만으로 역이 자동 등록되지는 않는다. 검색 목록과 실제 경로 탐색 지원 범위는 별개이며, 현재 경로는 아래의 한 방향 mock만 지원한다.
+역 정보 모델은 `backend/app/stations/schemas.py`에 있다. `search_stations()`는 Supabase REST API를 통해 `stations` 테이블에서 `id`, `name`, `lines`만 조회하며 DB에서 검색한다. 새 역을 테이블에 등록하면 다음 검색에 반영된다. 원본 지도 파일을 업로드하는 것만으로 역이 자동 등록되지는 않는다. 검색 목록과 실제 경로 탐색 지원 범위는 별개다. 직통 3호선 중 양쪽 지도와 방면별 승강장 연결이 있는 역 조합을 지원한다.
 
 루트 `.env`의 `SUPABASE_URL`, `SUPABASE_SECRET_KEY`가 필요하다. `SUPABASE_SECRET_KEY`에는 서버 전용 secret 키를 사용하며 publishable 키를 넣지 않는다. 로컬 실행 시 위의 `--env-file ../.env`로 읽고, Docker Compose는 `env_file`로 주입한다. 연결 설정 누락·DB 연결 실패는 `503`, 잘못된 DB 응답은 `502`를 반환한다. 키를 프론트에 전달하지 않는다.
 
-### 예시 경로 요청
+### 경로 요청
 
 ```bash
 curl -X POST http://localhost:8000/routes \
   -H 'Content-Type: application/json' \
-  -d '{"origin_station_id":"ilwon","destination_station_id":"hakyeoul"}'
+  -d '{"origin_station_id":"hongje","destination_station_id":"jamwon"}'
 ```
 
-현재 일원 → 학여울 요청에 [예시 경로 JSON](contracts/examples/route.json)을 반환한다. 출구는 예시의 양쪽 1번 출구로 고정되어 있으며 실제 경로 탐색은 하지 않는다. 그 외 역 조합은 `404`, 누락·잘못된 타입·빈 문자열 입력은 `422`를 반환한다. API는 `app.routing.service.find_route()`를 호출하며, 경로 계산 구현 시 이 함수 내부를 교체한다. 요청·응답 형식은 초안이다.
+선택한 역 ID로 노선·방면·추천 승차 문과 두 역의 실제 보행 방향장을 계산한다. 응답은 `trip`과 `legs`이며 기존 mock의 `nodes`·`edges`와 다르다. 출발·도착 출구는 1번이고 직통 3호선만 지원한다.
+
+로컬 실행 전 v2 형식의 실제 지도 JSON을 루트 `data/maps/{station_id}.json`에 준비한다. Docker도 이 폴더를 읽기 전용으로 연결한다. 다른 폴더는 서버 `MAP_DIR`로 지정할 수 있다. 지도·비밀 키는 Git에 커밋하지 않는다. `RENDER=true` 환경에서는 기존 Storage 버킷 루트의 같은 파일명을 읽는다.
+
+루트 `.env`에 `DATA_GO_KR_SERVICE_KEY`도 필요하다. DB에는 `station_platforms` 방면별 승강장 연결이 있어야 하며, v2에서 가져온 `infra/supabase/migrations/20261120220000_create_station_platforms.sql`을 새 DB에 적용한다. 기존 v2 DB에 적용된 경우 재실행하지 않는다. 지도 누락·외부 서비스 실패·미지원 여정은 오류를 반환하며 예시 경로로 대체하지 않는다.
+
+앱은 출발역 보행 → 승강장 → 탑승 → 하차 후 계단 앞 위치 확인 → 도착역 출구 보행을 표시한다. 위치 추적 연결 전이므로 도착과 탑승·하차는 사용자 확인 버튼으로 진행한다. 추천 문은 빠른하차 후보의 번호순 첫 문이며 출구까지 최단 보행을 보장하지 않는다.
+
+구현·설정·오류 코드는 [경로 계산](backend/app/routing/README.md), 응답 형식은 [공유 형식](contracts/README.md)을 참고한다.
 
 백엔드 테스트는 `backend`에서 실행한다.
 
@@ -148,6 +156,6 @@ python -m unittest discover -s tests
 
 ## 현재 들어 있는 것
 
-DB 역 검색, mock 경로 요청, 카메라와 안내 카드의 기본 흐름이 있다. 실제 경로 탐색·위치/방향 추정·자동 도착 판정은 아직 구현하지 않았다. 기존 레포 코드는 담당 기능별로 검토해 가져온다.
+DB 역 검색, 선택한 역의 실제 보행 경로 계산, 카메라와 안내 카드가 있다. 위치/방향 추정·자동 도착 판정·환승은 아직 구현하지 않았다. 기존 레포 코드는 담당 기능별로 검토해 가져온다.
 
 먼저 [구조](docs/architecture.md), [협업](docs/contributing.md), [공유 형식](contracts/README.md)을 읽고 작업 브랜치를 만든다.
