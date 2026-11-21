@@ -20,7 +20,8 @@
         {
           "motionPermission": "걸음을 세어 현재 위치를 추정하려면 동작 센서 접근을 허용해 주세요."
         }
-      ]
+      ],
+      "expo-image"
     ],
     "version": "1.0.0",
     "orientation": "portrait",
@@ -30,7 +31,7 @@
       "bundleIdentifier": "com.dwjustin.herestation",
       "appleTeamId": "6M9WRXSJ53",
       "infoPlist": {
-        "NSLocalNetworkUsageDescription": "개발 PC의 길 안내 서버에 연결하려면 로컬 네트워크 접근을 허용해 주세요."
+        "NSLocalNetworkUsageDescription": "개발 PC의 앱 개발 서버와 길 안내 API에 연결하려면 로컬 네트워크 접근을 허용해 주세요."
       },
       "supportsTablet": true
     },

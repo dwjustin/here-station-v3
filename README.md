@@ -2,6 +2,8 @@
 
 지하철역 실내 길안내 앱. 새 코드와 데이터 형식을 팀이 함께 정하기 위한 시작 레포지토리다.
 
+v2의 `d17331b`(서버 기본 구조) 다음 커밋인 `93ee544`(모바일 안내·역 조회 API)를 재현한 단계다. 초기 패키지와 실행 스크립트는 해당 커밋을 기준으로 하며, iOS 개발 빌드 실행 오류 수정은 별도로 반영했다.
+
 ## 기술과 역할
 
 | 영역 | 기술 | 역할 |
@@ -55,11 +57,18 @@ npm run ios -- --device
 
 이후 개발 서버만 실행할 때는 `npm start`를 사용한다. API·좌표·입출력 형식은 초안이며, 변경 시 관련 팀과 공유하고 호출부도 수정한다.
 
-`No script URL provided`가 뜨면 개발 빌드가 Mac의 Metro 서버에 연결하지 못한 상태다. `npm start`를 켜 두고 iPhone과 Mac을 같은 Wi-Fi에 연결한다. `expo-dev-client` 설치 전 빌드를 사용 중이면 `npm run ios -- --device`로 다시 설치한다. 핫스팟 등으로 Mac의 LAN 주소에 접근할 수 없거나 Metro 없이 앱을 실행하려면 `apps/mobile`에서 아래 명령을 사용한다. JS 번들을 포함한 Release 빌드를 실기기에 설치하며, 코드 변경은 다시 빌드해야 반영된다. API 서버 연결은 별도로 필요하다.
+`No script URL provided`가 뜨면 기기의 Debug 앱이 Mac의 Metro 개발 서버에서 JavaScript를 받지 못한 상태다. `expo-dev-client` 추가 전 설치한 앱은 아래 명령으로 네이티브 설정을 갱신한 뒤 다시 설치한다.
 
 ```bash
-npm run ios:standalone
+cd apps/mobile
+npm ci
+npx expo prebuild --platform ios --no-install
+npm run ios -- --device
 ```
+
+이후에는 `npm start`를 켜 둔 채 iPhone과 Mac을 같은 Wi-Fi에 연결하고, 개발 클라이언트에서 서버를 선택하거나 터미널의 QR 코드를 스캔한다. iPhone 설정에서 앱의 로컬 네트워크 접근을 허용한다. `.env.local`의 `EXPO_PUBLIC_API_URL`은 백엔드 주소이며 Metro 주소와 별개다.
+
+Metro 없이 실행하려면 `apps/mobile`에서 `npm run ios:standalone`으로 JavaScript 번들을 포함한 Release 앱을 설치한다. 코드 변경은 다시 빌드해야 반영되며 API 서버 연결은 별도로 필요하다.
 
 ## 1. GLB → JSON 팀
 
