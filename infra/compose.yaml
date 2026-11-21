@@ -12,7 +12,8 @@ services:
 
     volumes:
       - ../backend/app:/app/backend/app
-      - ../contracts/examples:/app/contracts/examples:ro
+      # shortcut: 역 지도를 로컬 data/maps 에서 읽는다. Supabase station-maps 버킷 연결 시 제거
+      - ../data/maps:/app/data/maps:ro
 
     command:
       - uvicorn

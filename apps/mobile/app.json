@@ -6,12 +6,19 @@
     "plugins": [
       "expo-router",
       [
-        "expo-camera",
+        "@reactvision/react-viro",
         {
-          "cameraPermission": "주변을 보며 길을 안내받으려면 카메라 접근을 허용해 주세요.",
-          "microphonePermission": false,
-          "recordAudioAndroid": false,
-          "barcodeScannerEnabled": false
+          "telemetry": false,
+          "provider": "none",
+          "ios": {
+            "cameraUsagePermission": "주변을 보며 길을 안내받으려면 카메라 접근을 허용해 주세요."
+          }
+        }
+      ],
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "걸음을 세어 현재 위치를 추정하려면 동작 센서 접근을 허용해 주세요."
         }
       ]
     ],
@@ -22,6 +29,9 @@
     "ios": {
       "bundleIdentifier": "com.dwjustin.herestation",
       "appleTeamId": "6M9WRXSJ53",
+      "infoPlist": {
+        "NSLocalNetworkUsageDescription": "개발 PC의 길 안내 서버에 연결하려면 로컬 네트워크 접근을 허용해 주세요."
+      },
       "supportsTablet": true
     },
     "android": {

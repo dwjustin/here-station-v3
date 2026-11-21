@@ -14,7 +14,7 @@ export default function RootLayout() {
         headerTransparent: false,
         headerStyle: { backgroundColor: tokens.colors.background },
       }}>
-        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="index" options={{ title: '홈', headerShown: false }} />
         <Stack.Screen name="guide" options={{ title: '길 안내' }} />
         <Stack.Screen name="stations" options={{ title: '역 선택' }} />
       </Stack>

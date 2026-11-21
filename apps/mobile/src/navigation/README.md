@@ -1,90 +1,69 @@
-# 방향 계산 연결부
+# 이동 중 위치·화살표 (순수 로직)
 
-`calculateCompassDirection.ts`는 위치 추정 팀이 구현할 순수 함수다. 센서·카메라·네트워크를 직접 사용하지 않는다. 현재는 TODO만 있으며 항상 `{ rotationDeg: null }`을 반환한다. 실제 방향 계산이 구현됐다는 의미가 아니다.
+방향·도착 계산은 이 폴더(`navigation/`), 위치 추적은 `../localization/`에 둔다.
+
+센서·카메라·네트워크를 직접 쓰지 않는 순수 TypeScript 모듈이다. 화면(`screens/`, `components/`)은 이 함수들을 부르기만 한다. `apps/mobile`에서 `npm test`로 모두 검사한다.
+
+좌표는 `x` 동(m), `z` 남(m), `h` 높이(m). 방위는 지도 북 0°, 시계 방향. 역마다 원점이 달라 구간(역)마다 따로 만든다.
+
+## 모듈
+
+| 파일 | 하는 일 |
+| --- | --- |
+| `../api/routes.ts` | `requestRoute`, `decodeLeg(leg)` → `DecodedLeg` (typed array) |
+| `mapGrid.ts` | `createMapGrid(decodedLeg)` → `lookup(x, z, h)` 밟은 노드(벽·다른 층이면 `null`), `directionDeg(node)`, `nodeXZH(node)` |
+| `guidance.ts` | `Pose` 타입, `createArrowStabilizer(grid)` → `(pose, t)` 화살표 회전각(1초 안 120° 넘는 뒤집힘은 1초 이어져야 바꿈, 구간마다 새로), `arrivedAt(pose, goal)`, `normalizeDeg` |
+| `trip.ts` | `nextTripPhase(phase, event, goals)`: `legA → onTrain → legB → arrived`, `activeLegIndex(phase)` |
+| `../localization/pdr.ts` | `motionSample(...)`: DeviceMotion → `MotionSample`. `createStepDetector().push(sample)` → 걸음(`Step`) 또는 `null` |
+| `../localization/localizer.ts` | `createLocalizer(grid)`: 입자 필터. `reset`, `arFrame`, `step`, `pose()` |
+| `../localization/virtualWalk.ts` | `virtualWalk(grid, leg, { arrowDeg, seed })`: 화면 화살표(`arrowDeg()`)를 보고 걷는 가상 보행자가 내보내는 `ArFrame` + 실제 위치(채점용). 테스트와 앱 개발 모드 "가상 보행"이 같이 쓴다 |
+
+## 흐름
 
 ```text
-실제 위치 추정 결과 + 다음 목표 노드
-  → calculateCompassDirection(input)
-  → { rotationDeg }
-  → CompassArrow
-  → 카메라/AR 화면 위의 오버레이
+ARKit 프레임(ArFrame) ─┐
+DeviceMotion → pdr ────┤→ localizer(구간 격자 위 입자 필터) → pose
+                       ▼
+pose → mapGrid.lookup → 칸 방향(큰 뒤집힘은 1초 유지) − 카메라 방위 → 화살표 회전각
+pose → trip: 구간 끝 도착이면 다음 단계, "내렸어요" 버튼 = alighted
 ```
 
-## 입력
-
-```typescript
-import type { CompassDirectionInput } from './calculateCompassDirection';
-
-const input = {
-  pose: {
-    stationId: 'hakyeoul',
-    mapRevision: '동일 지도 식별자',
-    level: 'B2',
-    position: { x: 0, z: -20, h: -6.05 },
-    cameraHeadingDeg: 0,
-    trackingStatus: 'tracking',
-  },
-  target: {
-    stationId: 'hakyeoul',
-    mapRevision: '동일 지도 식별자',
-    level: 'B2',
-    position: { x: 0.38, z: -29.63, h: -6.05 },
-  },
-  movementKind: 'walk',
-} satisfies CompassDirectionInput;
-```
-
-예시 값은 함수 사용법 설명용이며 센서 관측값이 아니다. 좌표 단위는 m, `x`는 동쪽, `z`는 남쪽, `h`는 역 원점 기준 높이다. `mapRevision`은 같은 지도 데이터임을 확인할 식별자이며, 현재 경로 예시에서는 `content_sha256`를 사용한다. 단순히 두 값이 같다고 좌표 정렬까지 완료되는 것은 아니다.
-
-`cameraHeadingDeg`는 지도 북쪽을 0°로 한 시계 방향 각도다. 카메라가 바라보는 방향을 수평면에 투영한 값이며, 자기장 센서의 원시 방향이나 휴대폰 윗변의 방향을 그대로 넣지 않는다. 위치 추정 팀이 지도와 AR/카메라 좌표계를 정렬하고 신뢰할 수 있을 때 `trackingStatus: 'tracking'`을 전달한다. 카메라가 수직을 향해 수평 방향을 결정할 수 없거나 추적이 불확실하면 방향을 `null` 또는 상태를 `unavailable`로 전달한다. GPS 입력은 필요하지 않다.
-
-## 출력
-
-```typescript
-{ rotationDeg: 0 }     // 카메라 정면
-{ rotationDeg: 90 }    // 오른쪽
-{ rotationDeg: -90 }   // 왼쪽
-{ rotationDeg: null }  // 계산 미구현 또는 안내 불가: 화살표를 숨김
-```
-
-범위는 `[-180, 180)`이며 정규화는 위치 추정 팀이 구현한다. 카메라를 돌리거나 위치가 바뀌면 다시 계산한다. `CompassArrow`는 받은 각도를 화면상의 위쪽 화살표 회전에 적용할 뿐, 위치 추정이나 도착 판정을 하지 않는다.
+- 구간 시작(`legA` 시작, `legB` 진입)에 `localizer.reset(leg.start, leg.start.heading_deg)`. 사용자는 화살표 방향을 보고 선다. 다음 AR 프레임의 방위가 이 방향이 되도록 `yawOffset`을 정한다.
+- AR 추적이 `normal`이면 AR 이동량을 쓰고, `limited`·`notAvailable`이거나 1초 넘게 프레임이 없으면 PDR 걸음으로 움직인다. PDR 방위는 AR이 정상일 때 들어온 걸음에서 배운 (지도 방위 − 기기 방위)를 더한다.
+- 입자가 보행 칸이 아닌 곳(벽)에 들어가면 버리고, 남은 입자를 다시 뽑는다. 한 칸(0.25m)보다 긴 이동(PDR 걸음)은 0.125m 간격으로 경로를 밟아 1칸짜리 벽·난간을 건너뛰지 못하게 한다. AR 프레임 이동은 그보다 짧아 끝점만 본다.
+- 출발 때 화살표를 보고 선 방향은 수 ° 틀린다. 입자마다 방위 치우침(표준편차 8°)을 따로 두어 벽이 맞는 치우침만 남기게 하고, 화면 카메라 방위에도 그 평균을 더한다.
+- 높이는 모든 입자가 같은 AR 높이(`AR y + hBase`, 첫 AR 프레임에서 추정 바닥에 맞춤)를 쓴다. 바닥 높이와 0.35m(서버 `MAX_STEP_CM`) 넘게 어긋난 입자는 버린다(계단을 오르는데 평지에 있는 입자, 겹친 다른 층·난간 윗면 입자). AR 높이 표류는 이동 1m당 0.2 비율로 살아남은 입자 바닥 평균 쪽으로 `hBase`를 고친다(실기기 보정 필요). 입자가 모두 버려지면 `hBase`를 추정 바닥에 다시 맞춘다. PDR 걸음은 옮긴 칸의 바닥 높이를 그대로 따른다.
+- `onTrain`·`arrived`에서는 위치를 넣지 않는다(열차 = 기억상실 구간).
 
 ## 담당 작업
 
-- 위치 추정 팀: 함수의 TODO 구현, 실제 `pose` 공급, 카메라·지도 방향 정렬, 불확실한 입력과 서로 다른 역·지도·층 처리.
-- 안내 팀: `arrival_radius`와 층·추적 상태를 고려한 도착 판정, 현재 구간과 다음 목표 갱신, 열차·계단 이동 정책. 도착 반경은 이 방향 함수에서 사용하지 않는다.
-- 프론트 팀: 카메라/AR 뷰 위에 `CompassArrow`를 배치. 화면에 겹치는 나침반 UI이며, 3D 월드에 고정된 AR 앵커를 생성하는 컴포넌트는 아니다.
+- 위치 추적 팀: `../localization/*`(입자 필터, PDR, 가상 보행), 실제 `pose` 공급, AR·지도 방위와 높이 정렬, 추적 끊김·다른 역·층 처리, `trip.ts`·`arrivedAt`(구간 전환·도착 판정, 열차 = 기억상실 구간. 도착 반경은 경로 응답의 `goal.arrival_radius`).
+- 프론트 팀: `../components/ArView.tsx`(AR 카메라)와 `../screens/GuideScreen.tsx` 화면 배치. 화살표(`../components/CompassArrow.tsx`)는 위치 추적 팀이 맡는다.
 
-`GuideScreen`은 현재 구간의 다음 노드를 목표로 함수와 화살표를 호출한다. `pose`는 아직 `null`이므로 카메라 위에는 `방향 확인 중`을 표시한다. `GuideCamera`가 후면 카메라 미리보기와 나침반 오버레이를 담당하며, 카메라 권한·설정 이동·시작 실패와 화면 이탈/백그라운드 시 해제를 처리한다. 화면의 약 70%는 카메라, 나머지는 현재 구간 안내 카드다. 작은 화면이나 큰 글씨에서는 카드 안을 스크롤할 수 있다.
+응답 형식은 [공유 형식](../../../../contracts/README.md)을 따른다.
 
-## 노드 도달과 카드 갱신
+## 입력 형식
 
-`advanceGuidance(route, currentNodeIndex, arrivedNodeId)`는 실제 다음 목표의 ID가 도착 이벤트와 일치할 때만 인덱스를 하나 진행시킨다. 중복·다른 목표의 이벤트와 도착 완료 이후 이벤트는 진행시키지 않는다. 이 함수는 위치나 도착 반경을 측정하지 않는다.
-
-`GuidanceView`의 `handleNodeArrival(nodeId)`가 이 함수를 호출한다. 현재 인덱스에서 노드·다음 노드·엣지·방향 계산 입력·카드 문구를 함께 선택한다. 마지막 노드에서는 도착 문구를 표시한다. 위치 추정 팀은 TODO 위치에 실제 도착 판정을 연결하고 구독을 해제해야 한다. 개발 모드의 `다음 노드 도달 테스트`는 수동 이벤트만 발생시키며 실제 위치를 측정하지 않는다. 운영 빌드에는 이 버튼이 없다.
-
-`apps/mobile`에서 `npm test`로 다음 목표 도착·중복/순서가 다른 이벤트·최종 도착 시 진행 중단을 검사한다.
-
-카메라 위의 표시 구조는 다음과 같다. 이 화면은 카메라 미리보기 위의 2D 나침반이며 월드 좌표에 고정된 3D AR은 아직 구현하지 않았다.
-
-```tsx
-<View style={{ flex: 1 }}>
-  {/* 카메라 미리보기 */}
-  <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-    <CompassArrow rotationDeg={direction.rotationDeg} />
-  </View>
-</View>
+```typescript
+type ArFrame = { t: number; x: number; y: number; z: number; // s, ARKit 월드 m (x 오른쪽, y 위, z 뒤)
+  yawDeg: number; // AR 월드 카메라 방위, AR -z에서 시계 방향
+  tracking: 'normal' | 'limited' | 'notAvailable' };
+type MotionSample = { t: number; accZ: number; headingDeg: number }; // 수직 가속도 m/s²(중력 제외), 기기 방위
+type Step = { t: number; lengthM: number; headingDeg: number };
+type Pose = { position: { x: number; z: number; h: number }; cameraHeadingDeg: number | null;
+  trackingStatus: 'tracking' | 'unavailable' };
 ```
 
-## 실기기 실행
+`ArFrame.t`와 `MotionSample.t`는 같은 시계(초)여야 한다. 시뮬레이터·테스트는 같은 형식의 가짜 데이터를 넣는다.
 
-`expo-camera`와 권한 설정을 추가했으므로 기존 개발 빌드는 Reload만으로 갱신되지 않는다. `apps/mobile`에서 지원되는 Node 버전으로 전환한 뒤 다시 빌드한다.
+가상 보행 테스트(`../localization/virtualWalk.test.mjs`)는 `data/route-hongje-jamwon.json`(gitignore)이 있으면 홍제 출구 → 1-1 → (열차) → 잠원 1-1 → 출구를 여러 seed로 걷고 도착률·오차를 출력한다. 보행자는 localizer 추정으로 그린 화살표만 보고 걷는다. 없으면 건너뛴다. 만들기: `backend/.venv/bin/python tools/route-inspect/inspect_route.py`.
 
-```bash
-nvm use 24
-npm run ios -- --device
-```
+## 아직 안 한 것
 
-첫 안내 화면에서 카메라 권한을 허용한다. 카메라·화살표 동작과 화면 비율은 실기기에서 확인해야 한다. 설정 변경으로 prebuild가 다시 필요하다면 SDK 58에서는 기존 네이티브 프로젝트를 유지하도록 `npx expo prebuild --platform ios --no-clean`을 사용한다. 개발 팀 ID는 기존 빌드 로그의 값으로 `app.json`에 보존했다.
-
-함수의 입력·출력은 연결용 초안이다. 변경 시 호출부·화살표·이 설명을 함께 수정한다.
+- 걸음 길이 계수(`WEINBERG_K`)와 걸음 문턱값은 실기기에서 보정해야 한다.
+- ARKit(ViroReact `components/ArView.tsx`)·`expo-sensors`(`localization/usePdrSteps.ts`) 연결은 실기기에서 확인하지 않았다. 확인할 것: AR 방위 부호, DeviceMotion 수직 가속도 부호(Android), 걸음 방위.
+- 가상 보행은 AR이 늘 `normal`인 경우만 본다. PDR 대체·추적 끊김은 합성 통로 테스트(`../localization/localizer.test.mjs`)만 있다.
+- 60 seed에서 홍제 60/60, 잠원 59/60 도착(seed 28 미도착, 테스트 20 seed는 모두 도착): 추정이 1m 넘게 어긋난 채 벽 앞에 서면 화살표가 벽 쪽을 가리켜 제자리를 맴돈다.
+- 1초 뒤집힘 유지는 120° 넘는 진짜 꺾임도 1초 늦춘다. 60 seed 실제 칸 방위와 90° 넘게 틀린 화살표 비율: 홍제 0.50% → 1.34%(나빠짐), 잠원 1.98% → 1.46%.
+- 넓은 승강장에서 출발하면 폰 방위 오차(3~12°)를 벽에 부딪혀 배우기 전까지 좌우 오차가 1m 남짓 쌓인다(잠원 처음 30초 화살표 오차 p90 약 20°). 출발 방위 치우침 폭을 넓혀도 나아지지 않았다. 실기기에서 실내 나침반 오차를 재 보고 출발 방위 보정에 쓸지 정한다.
+- shortcut: 앱 개발 모드 "가상 보행"은 화살표만 보여 주고 위에서 내려다본 디버그 지도(거리장 화살표 + 내 점)는 없다, 대신 `tools/route-inspect/inspect_route.py`의 PNG로 본다. 시뮬레이터에서 추정이 어긋나는 곳을 눈으로 봐야 할 때 화면에 붙인다.
