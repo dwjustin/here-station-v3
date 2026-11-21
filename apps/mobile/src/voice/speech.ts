@@ -92,10 +92,12 @@ export async function listenOnce(contextualStrings: string[] = []): Promise<stri
         if (event.isFinal) heard = event.results[0]?.transcript ?? '';
       }),
       ExpoSpeechRecognitionModule.addListener('error', (event) => {
-        // 말이 없었던 경우는 오류가 아니라 빈 결과로 본다
-        if (event.error === 'no-speech' || event.error === 'speech-timeout' || event.error === 'aborted') return;
+        // 말이 없었거나 다른 소리·권한 창에 오디오가 끊긴 경우는 오류가 아니라 빈 결과로 본다
+        if (['no-speech', 'speech-timeout', 'aborted', 'interrupted'].includes(event.error)) return;
         failed = true;
-        reject(new Error(event.message || '음성 인식에 실패했습니다.'));
+        // 기기 오류 문장은 영어라 사용자에게 읽어 주지 않는다
+        console.warn('speech recognition error', event.error, event.message);
+        reject(new Error('음성 인식을 쓸 수 없어요. 잠시 뒤 화면을 누르고 다시 말씀해 주세요.'));
       }),
       ExpoSpeechRecognitionModule.addListener('end', () => {
         subscriptions.forEach((s) => s.remove());
