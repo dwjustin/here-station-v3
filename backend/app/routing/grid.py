@@ -8,6 +8,7 @@ import os
 import re
 import sys
 from array import array
+from functools import lru_cache
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
@@ -118,6 +119,9 @@ def read_map_file(filename: str) -> bytes:
     return (MAP_DIR / filename).read_bytes()
 
 
+# 지도는 역마다 한 번만 내려받고 메모리에 둔다(요청마다 약 4.6초 절약). 지도를 바꾸면 서버를 재시작한다(README 규칙).
+# 실패(예외)는 캐시되지 않아 다음 요청에서 다시 받는다. StationGrid는 만든 뒤 바꾸지 않으므로 요청끼리 같이 써도 된다.
+@lru_cache(maxsize=32)
 def load_map(station_id: str) -> StationGrid:
     raw = read_map_file(f"{station_id}.json")
     try:
