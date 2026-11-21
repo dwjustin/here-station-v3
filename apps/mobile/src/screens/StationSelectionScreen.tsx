@@ -31,7 +31,7 @@ export default function StationSelectionScreen() {
       const result = await requestRoute(apiBaseUrl, origin.id, destination.id);
       setRoute(result);
       if (__DEV__) console.log('[routes:response]', result);
-      router.push('/guide');
+      router.push('/preview');
     } catch (error) {
       const message = error instanceof Error ? error.message : '길 찾기에 실패했습니다.';
       setError(message);
