@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { Link } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,6 +23,12 @@ export default function LandingScreen() {
             <Text style={styles.description}>
               출발역부터 도착역까지 함께해요.
             </Text>
+            <Image
+              source={require('../../assets/yeokdu/yeokdu_02_hello.svg')}
+              style={styles.mascot}
+              contentFit="contain"
+              accessible={false}
+            />
           </ScrollView>
           <Text style={styles.hint}>화면을 터치해 시작하세요</Text>
         </SafeAreaView>
@@ -42,6 +49,7 @@ const styles = StyleSheet.create({
   },
   title: { color: tokens.colors.text, fontSize: tokens.fontSize.hero, fontWeight: '700' },
   description: { color: tokens.colors.muted, fontSize: tokens.fontSize.body },
+  mascot: { width: '100%', maxWidth: 320, aspectRatio: 1, alignSelf: 'center' },
   hint: {
     flexShrink: 0,
     color: tokens.colors.muted,
