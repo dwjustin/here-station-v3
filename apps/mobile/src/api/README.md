@@ -22,7 +22,7 @@
 
 ## 응답 형식과 `decodeLeg`
 
-`RouteResponse = { legs: RouteLeg[] }`. 구간 0 = 홍제 1번 출구 → 오금 방면 `1-1`, 구간 1 = 잠원 `1-1` → 1번 출구. 각 구간은 `grid`(`x0`, `z0`, `w`, `cell`), `start`(`heading_deg` 포함), `goal`(`arrival_radius` 포함), base64 배열 `cells`·`h`·`direction`을 가진다. 좌표는 `x` 동, `z` 남, `h` 높이(m). 타입은 `routes.ts`에 직접 적었으며 `contracts/`의 스키마와 같이 바꾼다. 런타임 스키마 검증은 하지 않는다.
+`RouteResponse = { trip: RouteTrip; legs: RouteLeg[] }`. `trip`은 선택한 출발·도착역, 호선·방면·추천 문과 보행거리를 담는다. 구간 0은 출발역 1번 출구 → 승강장, 구간 1은 도착역 승강장 진입점 → 1번 출구다. 각 구간은 `grid`(`x0,z0,w,cell`), `start`(`heading_deg` 포함), `goal`(`arrival_radius` 포함), `platform`과 base64 배열 `cells`·`h`·`direction`을 가진다. 요청한 역 ID·구간 순서와 여정 정보, 좌표·배열·승강장 영역을 런타임에 검증한다. 좌표는 x=동, z=남, h=높이(m)다. 타입은 `routes.ts`와 `contracts/`를 함께 유지한다.
 
 `decodeLeg(leg)`는 base64를 풀어 `cells: Int32Array`, `h: Int16Array`(cm), `direction: Uint16Array`(0.1° 단위, 65535 = 방향 없음)로 돌려준다. 세 배열 길이가 다르면 오류를 던진다. 칸 찾기·화살표는 [navigation](../navigation/README.md)을 본다.
 

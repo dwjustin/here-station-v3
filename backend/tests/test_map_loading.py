@@ -20,7 +20,7 @@ class MapLoadingTests(unittest.TestCase):
     def setUp(self):
         self.raw = json.dumps({
             "id": "hongje", "x0": 0, "z0": 0, "w": 2, "cell": 0.25,
-            "levels": [{"name": "1F", "h": 0}],
+            "levels": [{"name": "1F", "h": 0}], "pois": [],
             "nodes": {"cell": grid.pack(array("i", [0, 1])), "h": grid.pack(array("h", [0, 0]))},
         }).encode()
         environment = patch.dict("os.environ", {
@@ -97,6 +97,18 @@ class MapLoadingTests(unittest.TestCase):
         for body in [b"not json", b"null", b"{}", b'{"nodes": {}}']:
             with self.subTest(body=body):
                 self.raw = body
+                self.assertEqual(self.request_route().status_code, 502)
+
+    def test_invalid_grid_and_poi_values_return_502(self):
+        valid = json.loads(self.raw)
+        invalid = [
+            {**valid, "w": 0}, {**valid, "cell": -0.25}, {**valid, "levels": []},
+            {**valid, "nodes": {**valid["nodes"], "h": ""}},
+            {**valid, "pois": [{"kind": "stairs", "x": 0, "z": 0, "h": 0}]},
+        ]
+        for doc in invalid:
+            with self.subTest(doc=doc):
+                self.raw = json.dumps(doc).encode()
                 self.assertEqual(self.request_route().status_code, 502)
 
     def request_route(self):

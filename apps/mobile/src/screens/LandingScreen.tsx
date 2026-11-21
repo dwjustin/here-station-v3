@@ -1,8 +1,5 @@
 import { router } from 'expo-router';
 import { ScrollView, Text, View, useWindowDimensions } from 'react-native';
-import { Image } from 'expo-image';
-import { Link, router } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Button from '../components/ui/Button';
@@ -16,73 +13,50 @@ export default function LandingScreen() {
   const mascot = Math.min(Math.min(width, CONTENT_MAX_WIDTH) * 0.78, height * 0.4);
 
   return (
-    <View style={styles.screen}>
-      <Link href="/stations" asChild>
-        <Pressable
-          style={styles.touch}
-          accessibilityRole="button"
-          accessibilityLabel="출발역과 도착역 선택하기"
-          accessibilityHint="화면을 누르면 역 선택 화면으로 이동합니다"
-        >
-          {/* 아래 음성 버튼이 하단 안전 영역을 맡는다 */}
-          <SafeAreaView edges={['top', 'left', 'right']} style={styles.content}>
-            <View style={styles.header}>
-              <Text style={styles.brand}>Here Station</Text>
-            </View>
-            <ScrollView style={styles.body} contentContainerStyle={styles.introduction}>
-              <Text style={styles.title}>어디로 안내할까요?</Text>
-              <Text style={styles.description}>
-                출발역부터 도착역까지 함께해요.
-              </Text>
-              <Image
-                source={require('../../assets/yeokdu/yeokdu_02_hello.svg')}
-                style={styles.mascot}
-                contentFit="contain"
-                accessible={false}
-              />
-            </ScrollView>
-            <Text style={styles.hint}>화면을 터치해 시작하세요</Text>
-          </SafeAreaView>
-        </Pressable>
-      </Link>
-      {/* 화면을 보지 않고 쓰는 사람을 위한 음성 시작. 화면 터치(역 선택)와 따로 둔다 */}
-      <SafeAreaView edges={['bottom']} style={styles.voice}>
-        <Button label="말로 길 찾기" onPress={() => router.push('/voice')} />
-      </SafeAreaView>
-    </View>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+      <ScrollView
+        contentContainerStyle={{
+          flexGrow: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          paddingHorizontal: ui.space.lg,
+          paddingVertical: ui.space.lg,
+        }}
+        bounces={false}
+      >
+        <View style={{ width: mascot * 1.15, alignItems: 'center', justifyContent: 'flex-end' }}>
+          {/* 캐릭터 뒤 크림색 원. 카드가 아니라 캐릭터를 받쳐 주는 무대다 */}
+          <View style={{
+            position: 'absolute',
+            top: mascot * 0.08,
+            width: mascot * 0.98,
+            height: mascot * 0.98,
+            borderRadius: mascot,
+            backgroundColor: colors.surface,
+          }} />
+          <Yeokdu pose="hello" size={mascot} />
+        </View>
+
+        <Text accessibilityRole="header" lineBreakStrategyIOS="hangul-word" style={[ui.type.display, { textAlign: 'center', marginTop: ui.space.lg }]}>
+          어디로 <Text style={{ color: colors.fur }}>안내할까요?</Text>
+        </Text>
+        <Text style={[ui.type.body, { color: colors.muted, textAlign: 'center', marginTop: ui.space.sm }]}>
+          출발역부터 도착역까지 함께해요.
+        </Text>
+      </ScrollView>
+
+      {/* 엄지가 닿는 하단에 고정. 글자를 키워도 화면 밖으로 밀리지 않는다 */}
+      <View style={{
+        width: '100%',
+        maxWidth: CONTENT_MAX_WIDTH,
+        alignSelf: 'center',
+        paddingHorizontal: ui.space.lg,
+        paddingBottom: ui.space.md,
+        gap: ui.space.sm,
+      }}>
+        <Button label="길 안내 시작하기" onPress={() => router.push('/stations')} />
+        <Button label="말로 길 찾기" variant="secondary" onPress={() => router.push('/voice')} />
+      </View>
+    </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: tokens.colors.background },
-  touch: { flex: 1 },
-  voice: { paddingHorizontal: tokens.spacing.lg, paddingBottom: tokens.spacing.lg },
-  content: {
-    flexGrow: 1,
-    paddingHorizontal: tokens.spacing.lg,
-    paddingTop: tokens.spacing.xl,
-    paddingBottom: tokens.spacing.lg,
-  },
-  title: {
-    color: tokens.colors.text,
-    fontSize: tokens.fontSize.hero,
-    fontWeight: '700',
-  },
-  accent: { color: tokens.colors.primary },
-  characterSpace: {
-    flex: 1,
-    minHeight: tokens.spacing.xl * 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: tokens.spacing.lg,
-  },
-  title: { color: tokens.colors.text, fontSize: tokens.fontSize.hero, fontWeight: '700' },
-  description: { color: tokens.colors.muted, fontSize: tokens.fontSize.body },
-  mascot: { width: '100%', maxWidth: 320, aspectRatio: 1, alignSelf: 'center' },
-  hint: {
-    flexShrink: 0,
-    color: tokens.colors.muted,
-    fontSize: tokens.fontSize.body,
-    textAlign: 'center',
-  },
-});

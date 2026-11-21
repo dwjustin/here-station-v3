@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { tokens } from '../theme/token';
+import { colors, useUi, type Ui } from '../theme/token';
 import { searchStations } from '../api/stations';
 import { sendVoiceTurn, type VoiceMessage } from '../api/voice';
 import { useRouteSession } from '../state/RouteSession';
@@ -22,6 +22,8 @@ const STATUS_TEXT: Record<Status, string> = {
 };
 
 export default function VoiceScreen() {
+  const ui = useUi();
+  const styles = createStyles(ui);
   const { setRoute } = useRouteSession();
   const [status, setStatus] = useState<Status>('speaking');
   const [heard, setHeard] = useState('');
@@ -120,11 +122,11 @@ export default function VoiceScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: tokens.colors.background },
-  pad: { flex: 1, padding: tokens.spacing.lg, gap: tokens.spacing.lg, justifyContent: 'center' },
-  status: { color: tokens.colors.primary, fontSize: tokens.fontSize.title, fontWeight: '700', textAlign: 'center' },
-  bubble: { backgroundColor: tokens.colors.surface, borderRadius: 16, padding: tokens.spacing.lg },
-  reply: { color: tokens.colors.text, fontSize: tokens.fontSize.body, lineHeight: 26 },
-  heard: { color: tokens.colors.muted, fontSize: tokens.fontSize.body, textAlign: 'center' },
+const createStyles = (ui: Ui) => StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.background },
+  pad: { flex: 1, padding: ui.space.lg, gap: ui.space.lg, justifyContent: 'center' },
+  status: { color: colors.helmet, fontSize: ui.type.title.fontSize, fontWeight: '700', textAlign: 'center' },
+  bubble: { backgroundColor: colors.surface, borderRadius: 16, padding: ui.space.lg },
+  reply: { color: colors.text, fontSize: ui.type.body.fontSize, lineHeight: 26 },
+  heard: { color: colors.muted, fontSize: ui.type.body.fontSize, textAlign: 'center' },
 });

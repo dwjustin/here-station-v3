@@ -4,11 +4,12 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useRouteSession } from '../state/RouteSession';
-import { tokens } from '../theme/token';
+import { colors, useUi, type Ui } from '../theme/token';
 import Button from '../components/ui/Button';
-import Card from '../components/ui/Card';
 
 export default function RoutePreviewScreen() {
+  const ui = useUi();
+  const styles = createStyles(ui);
   const { route } = useRouteSession();
 
   if (!route || route.legs.length !== 2) {
@@ -23,7 +24,7 @@ export default function RoutePreviewScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>경로 미리보기</Text>
 
-        <Card style={styles.card}>
+        <View style={styles.card}>
           <Text style={styles.sectionTitle}>이동 경로</Text>
           <Text style={styles.distance}>
             역 내부 도보 약 {Math.round(totalWalkM)}m
@@ -44,9 +45,9 @@ export default function RoutePreviewScreen() {
           <Text style={styles.detail}>
             추천 승하차 위치: {trip.door_no}
           </Text>
-        </Card>
+        </View>
 
-        <Card style={styles.card}>
+        <View style={styles.card}>
           <Text style={styles.sectionTitle}>이동 순서</Text>
 
           <Text style={styles.step}>
@@ -64,9 +65,9 @@ export default function RoutePreviewScreen() {
           <Text style={styles.step}>
             ⑤ 1번 출구까지 약 {Math.round(trip.destination_walk_m)}m 이동
           </Text>
-        </Card>
+        </View>
 
-        <Card style={styles.card}>
+        <View style={styles.card}>
           <Text style={styles.sectionTitle}>3D 경로 지도</Text>
 
           <View style={styles.mapPlaceholder}>
@@ -74,7 +75,7 @@ export default function RoutePreviewScreen() {
               3D 경로 지도는 다음 단계에서 연결합니다.
             </Text>
           </View>
-        </Card>
+        </View>
       </ScrollView>
 
       <View style={styles.footer}>
@@ -87,41 +88,44 @@ export default function RoutePreviewScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (ui: Ui) => StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: tokens.colors.background,
+    backgroundColor: colors.background,
   },
   content: {
-    padding: tokens.spacing.lg,
-    gap: tokens.spacing.lg,
+    padding: ui.space.lg,
+    gap: ui.space.lg,
     paddingBottom: 32,
   },
   title: {
-    color: tokens.colors.text,
-    fontSize: tokens.fontSize.title,
+    color: colors.text,
+    fontSize: ui.type.title.fontSize,
     fontWeight: '700',
   },
   card: {
+    backgroundColor: colors.surface,
+    borderRadius: ui.radius.lg,
+    padding: ui.space.lg,
     gap: 14,
   },
   sectionTitle: {
-    color: tokens.colors.text,
+    color: colors.text,
     fontSize: 18,
     fontWeight: '700',
   },
   distance: {
-    color: tokens.colors.text,
+    color: colors.text,
     fontSize: 26,
     fontWeight: '700',
   },
   station: {
-    color: tokens.colors.text,
+    color: colors.text,
     fontSize: 16,
     fontWeight: '600',
   },
   detail: {
-    color: tokens.colors.muted,
+    color: colors.muted,
     fontSize: 14,
   },
   divider: {
@@ -129,7 +133,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#E5E7EB',
   },
   step: {
-    color: tokens.colors.text,
+    color: colors.text,
     fontSize: 15,
     lineHeight: 24,
   },
@@ -142,11 +146,11 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   placeholderText: {
-    color: tokens.colors.muted,
+    color: colors.muted,
     textAlign: 'center',
   },
   footer: {
     padding: 16,
-    backgroundColor: tokens.colors.background,
+    backgroundColor: colors.background,
   },
 });

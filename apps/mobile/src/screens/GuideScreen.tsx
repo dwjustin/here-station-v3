@@ -2,10 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Redirect, router } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Redirect } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
-import { StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CONTENT_MAX_WIDTH, colors, useUi, type Ui } from '../theme/token';
 import { useRouteSession } from '../state/RouteSession';
@@ -166,41 +163,24 @@ function TripView({ route }: { route: RouteResponse }) {
   const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView style={styles.screen} edges={['left', 'right', 'bottom']}>
-      <View style={styles.camera}>
-        <ArView onFrame={(frame: ArFrame) => { if (!virtualRef.current) feed((l) => l.arFrame(frame), frame.t); }} />
-        {legIndex !== null ? (
-          <View pointerEvents="none" style={styles.overlay}>
-            <CompassArrow rotationDeg={rotationDeg} />
-          </View>
-        ) : null}
-        <View style={styles.bottom}>
-          {legIndex !== null ? (
-            <GuidanceCard instruction={spoken} />
-          ) : null}
-          {phase === 'onTrain' ? (
-            <Card style={styles.card}>
-              <Text style={styles.title} accessibilityLiveRegion="polite">
-                {`${trip.line_name} ${trip.direction} 방면 · ${trip.destination_station_name}역에서 ${trip.door_no} 문으로 내리세요`}
-              </Text>
-              <Button label="내렸어요" onPress={alighted} />
-            </Card>
-          ) : null}
-          {phase === 'arrived' ? (
-            <Card style={styles.card}>
-              <Text style={styles.title} accessibilityLiveRegion="polite">{spoken}</Text>
-            </Card>
-          ) : null}
-          {__DEV__ && legIndex !== null ? (
-            <Button label={virtual ? '가상 보행 끄기' : '가상 보행'} onPress={toggleVirtual} />
-          ) : null}
+    <View style={{ flex: 1, backgroundColor: colors.text }}>
+      {/* 카메라가 화면 전체. 안내 정보는 그 위에 떠 있는 층으로만 둔다 */}
+      <ArView onFrame={(frame: ArFrame) => { if (!virtualRef.current) feed((l) => l.arFrame(frame), frame.t); }} />
+
+      {legIndex !== null ? (
+        // 위 24%를 비우고 남은 영역의 가운데, 즉 화면 높이 약 62%에 화살표 중심이 온다
+        <View pointerEvents="none" style={{
+          position: 'absolute', top: '24%', left: 0, right: 0, bottom: 0,
+          justifyContent: 'center', alignItems: 'center',
+        }}>
+          <CompassArrow rotationDeg={rotationDeg} />
         </View>
       ) : null}
 
       <TopBar ui={ui} top={insets.top} phase={phase}
         virtual={__DEV__ && legIndex !== null ? virtual : null} onToggleVirtual={toggleVirtual} />
 
-      <Sheet ui={ui} bottom={insets.bottom} phase={phase} onAlighted={alighted} />
+      <Sheet ui={ui} bottom={insets.bottom} phase={phase} onAlighted={alighted} trip={trip} spoken={spoken} />
     </View>
   );
 }
@@ -277,8 +257,8 @@ function TopBar({ ui, top, phase, virtual, onToggleVirtual }: {
 }
 
 /** 하단 시트. 단계마다 역두 표정과 문구 하나, 필요할 때만 버튼 하나 */
-function Sheet({ ui, bottom, phase, onAlighted }: {
-  ui: Ui; bottom: number; phase: TripPhase; onAlighted: () => void;
+function Sheet({ ui, bottom, phase, onAlighted, trip, spoken }: {
+  ui: Ui; bottom: number; phase: TripPhase; onAlighted: () => void; trip: RouteResponse['trip']; spoken: string;
 }) {
   const walking = phase === 'legA' || phase === 'legB';
   return (
@@ -302,7 +282,7 @@ function Sheet({ ui, bottom, phase, onAlighted }: {
               <Text style={[ui.type.label, { color: colors.scarfInk }]}>
                 {phase === 'legA' ? '출발역 안내' : '도착역 안내'}
               </Text>
-              <Text style={ui.type.title} lineBreakStrategyIOS="hangul-word" accessibilityLiveRegion="polite">화살표 방향을 확인하세요</Text>
+              <Text style={ui.type.title} lineBreakStrategyIOS="hangul-word" accessibilityLiveRegion="polite">{spoken}</Text>
             </View>
           </View>
         ) : null}
@@ -313,7 +293,7 @@ function Sheet({ ui, bottom, phase, onAlighted }: {
               <Yeokdu pose="basic" size={ui.px(72)} />
               <View style={{ flex: 1, gap: ui.space.xs }} accessibilityLiveRegion="polite">
                 <Text style={[ui.type.label, { color: colors.muted }]}>열차 이동 중</Text>
-                <Text style={ui.type.title} lineBreakStrategyIOS="hangul-word">잠원역에서 1-1 문으로 내리세요</Text>
+                <Text style={ui.type.title} lineBreakStrategyIOS="hangul-word">{trip.destination_station_name}역에서 {trip.door_no} 문으로 내리세요</Text>
               </View>
             </View>
             <Button label="내렸어요" onPress={onAlighted} />

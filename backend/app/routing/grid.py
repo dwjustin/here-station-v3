@@ -1,6 +1,7 @@
 """역 지도 격자: 보행 칸 디코딩과 이웃 그래프. 형식은 지도 파일의 `_doc` 참고."""
 
 import base64
+import binascii
 import hashlib
 import json
 import math
@@ -25,7 +26,7 @@ DIAGONAL = ((-1, -1), (-1, 1), (1, -1), (1, 1))
 
 
 def unpack(b64: str, typecode: str) -> array:
-    values = array(typecode, base64.b64decode(b64))
+    values = array(typecode, base64.b64decode(b64, validate=True))
     if sys.byteorder == "big":
         values.byteswap()
     return values
@@ -47,6 +48,13 @@ class StationGrid:
         self.x0, self.z0, self.w, self.cell = doc["x0"], doc["z0"], doc["w"], doc["cell"]
         self.cells = unpack(doc["nodes"]["cell"], "i")
         self.h_cm = unpack(doc["nodes"]["h"], "h")
+        if (not all(isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v)
+                    for v in (self.x0, self.z0, self.cell)) or self.cell <= 0
+                or type(self.w) is not int or self.w <= 0
+                or not self.cells or len(self.cells) != len(self.h_cm) or any(c < 0 for c in self.cells)
+                or not doc["levels"] or not all(isinstance(level["name"], str) and math.isfinite(level["h"])
+                                                for level in doc["levels"])):
+            raise ValueError("Invalid map grid")
         self.neighbors = self._link()
 
     def _link(self) -> list[list[tuple[int, float]]]:
@@ -128,6 +136,14 @@ def load_map(station_id: str) -> StationGrid:
         doc = json.loads(raw)
         if doc["id"] != station_id:
             raise ValueError("station_id mismatch")
+        if not isinstance(doc["pois"], list) or not all(
+            isinstance(poi["kind"], str) and
+            (poi["kind"] not in ("stairs", "platform") or
+             all(isinstance(poi.get(key), str) and poi[key].strip() for key in ("id", "name"))) and all(
+                isinstance(poi[key], (int, float)) and not isinstance(poi[key], bool) and math.isfinite(poi[key])
+                for key in ("x", "z", "h")) for poi in doc["pois"]
+        ):
+            raise ValueError("Invalid map POIs")
         return StationGrid(doc, hashlib.sha256(raw).hexdigest())
-    except (ValueError, KeyError, TypeError, IndexError, ZeroDivisionError) as error:
+    except (ValueError, KeyError, TypeError, IndexError, ZeroDivisionError, OverflowError, binascii.Error) as error:
         raise HTTPException(status_code=502, detail="역 지도 파일 형식이 올바르지 않습니다.") from error

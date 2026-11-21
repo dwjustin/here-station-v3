@@ -9,7 +9,7 @@ import { rectLeg } from './fixtures.mjs';
 const b64 = (typed) => Buffer.from(typed.buffer).toString('base64');
 
 test('decodeLeg round-trips the base64 arrays', () => {
-  const cells = Int32Array.from([0, 70000, -1, 2 ** 31 - 1]);
+  const cells = Int32Array.from([0, 70000, 1, 2 ** 31 - 1]);
   const h = Int16Array.from([0, -350, 1200, -32768]);
   const direction = Uint16Array.from([0, 900, 3599, 65535]);
   const start = { level: 'B1', x: 1, z: 2, h: 0, heading_deg: 90 };
