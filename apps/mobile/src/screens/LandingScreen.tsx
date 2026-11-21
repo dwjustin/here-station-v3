@@ -1,12 +1,20 @@
+import { router } from 'expo-router';
+import { ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { Link, router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Button from '../components/ui/Button';
-import { tokens } from '../theme/token';
+import Yeokdu from '../components/ui/Yeokdu';
+import { CONTENT_MAX_WIDTH, colors, useUi } from '../theme/token';
 
 export default function LandingScreen() {
+  const ui = useUi();
+  const { width, height } = useWindowDimensions();
+  // 캐릭터가 화면의 주인공. 폭과 높이 중 좁은 쪽에 맞춰 짧은 폰에서도 버튼을 밀어내지 않는다
+  const mascot = Math.min(Math.min(width, CONTENT_MAX_WIDTH) * 0.78, height * 0.4);
+
   return (
     <View style={styles.screen}>
       <Link href="/stations" asChild>

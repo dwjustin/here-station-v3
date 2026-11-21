@@ -1,7 +1,7 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
-import { tokens } from '../theme/token';
+import { colors } from '../theme/token';
 import { RouteSessionProvider } from '../state/RouteSession';
 
 export default function RootLayout() {
@@ -9,13 +9,17 @@ export default function RootLayout() {
     <RouteSessionProvider>
       <StatusBar style="dark" />
       <Stack screenOptions={{
-        contentStyle: { backgroundColor: tokens.colors.background },
-        headerTintColor: tokens.colors.text,
-        headerTransparent: false,
-        headerStyle: { backgroundColor: tokens.colors.background },
+        contentStyle: { backgroundColor: colors.background },
+        headerTintColor: colors.text,
+        headerStyle: { backgroundColor: colors.background },
+        // 제목은 화면 안의 큰 글씨가 맡는다. 상단 막대는 뒤로 가기만 남긴다
+        headerShadowVisible: false,
+        headerBackButtonDisplayMode: 'minimal',
+        headerTitle: '',
       }}>
         <Stack.Screen name="index" options={{ title: '홈', headerShown: false }} />
-        <Stack.Screen name="guide" options={{ title: '길 안내' }} />
+        {/* 카메라가 화면 전체를 쓰고 뒤로 가기는 화면 안의 둥근 버튼이 맡는다 */}
+        <Stack.Screen name="guide" options={{ title: '길 안내', headerShown: false }} />
         <Stack.Screen name="stations" options={{ title: '역 선택' }} />
         <Stack.Screen name="preview" options={{ title: '경로 미리보기' }} />
         <Stack.Screen name="voice" options={{ title: '말로 길 찾기' }} />

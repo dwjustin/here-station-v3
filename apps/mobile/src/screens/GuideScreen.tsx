@@ -1,17 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
+import { Redirect, router } from 'expo-router';
+import { Pressable, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Redirect } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { tokens } from '../theme/token';
+import { CONTENT_MAX_WIDTH, colors, useUi, type Ui } from '../theme/token';
 import { useRouteSession } from '../state/RouteSession';
 import { usePdrSteps } from '../localization/usePdrSteps';
 import ArView from '../components/ArView';
 import CompassArrow from '../components/CompassArrow';
-import GuidanceCard from '../components/GuidanceCard';
 import Button from '../components/ui/Button';
-import Card from '../components/ui/Card';
+import Yeokdu from '../components/ui/Yeokdu';
 import { decodeLeg, type RouteResponse } from '../api/routes';
 import { createMapGrid } from '../navigation/mapGrid';
 import { createArrowStabilizer } from '../navigation/guidance';
@@ -160,6 +162,9 @@ function TripView({ route }: { route: RouteResponse }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- feed는 ref만 읽고 legs는 바뀌지 않으므로 다시 시작할 필요 없다
   }, [virtual, legIndex]);
 
+  const ui = useUi();
+  const insets = useSafeAreaInsets();
+
   return (
     <SafeAreaView style={styles.screen} edges={['left', 'right', 'bottom']}>
       <View style={styles.camera}>
@@ -190,17 +195,140 @@ function TripView({ route }: { route: RouteResponse }) {
             <Button label={virtual ? '가상 보행 끄기' : '가상 보행'} onPress={toggleVirtual} />
           ) : null}
         </View>
-      </View>
-    </SafeAreaView>
+      ) : null}
+
+      <TopBar ui={ui} top={insets.top} phase={phase}
+        virtual={__DEV__ && legIndex !== null ? virtual : null} onToggleVirtual={toggleVirtual} />
+
+      <Sheet ui={ui} bottom={insets.bottom} phase={phase} onAlighted={alighted} />
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: tokens.colors.background },
-  camera: { flex: 1 },
-  // 위 24%를 비우고 남은 영역의 가운데, 즉 화면 높이 약 62%에 화살표 중심이 온다
-  overlay: { position: 'absolute', top: '24%', left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center' },
-  bottom: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: tokens.spacing.md, gap: tokens.spacing.sm },
-  card: { gap: tokens.spacing.md },
-  title: { color: tokens.colors.text, fontSize: tokens.fontSize.body, fontWeight: '700' },
-});
+/** 떠 있는 카드 배경: colors.background(#FFFBF4)를 70% 불투명으로 */
+const SHEET_BACKGROUND = 'rgba(255, 251, 244, 0.7)';
+
+const STEPS: { phase: TripPhase; name: string }[] = [
+  { phase: 'legA', name: '출발역' },
+  { phase: 'onTrain', name: '열차' },
+  { phase: 'legB', name: '도착역' },
+];
+
+/** 뒤로 가기 + 3단계 진행 막대. 지금 어디쯤인지 한눈에 보이게 한다 */
+function TopBar({ ui, top, phase, virtual, onToggleVirtual }: {
+  ui: Ui; top: number; phase: TripPhase; virtual: boolean | null; onToggleVirtual: () => void;
+}) {
+  const current = phase === 'arrived' ? STEPS.length : STEPS.findIndex((s) => s.phase === phase);
+  const round = ui.touch;
+  return (
+    <View style={{
+      position: 'absolute', top: top + ui.space.sm, left: ui.space.md, right: ui.space.md,
+      flexDirection: 'row', alignItems: 'center', gap: ui.space.md,
+    }}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="뒤로 가기"
+        onPress={() => router.back()}
+        style={({ pressed }) => ({
+          width: round, height: round, borderRadius: round,
+          backgroundColor: pressed ? colors.sunken : colors.background,
+          alignItems: 'center', justifyContent: 'center',
+        })}
+      >
+        {/* 테두리 두 변을 돌려 만든 왼쪽 꺾쇠 */}
+        <View style={{
+          width: ui.px(12), height: ui.px(12), marginLeft: ui.px(4),
+          borderLeftWidth: 3, borderBottomWidth: 3, borderColor: colors.text,
+          transform: [{ rotate: '45deg' }],
+        }} />
+      </Pressable>
+
+      <View
+        accessible
+        accessibilityRole="progressbar"
+        accessibilityLabel={phase === 'arrived' ? '안내 완료' : `3단계 중 ${current + 1}단계, ${STEPS[current].name}`}
+        style={{ flex: 1, flexDirection: 'row', gap: ui.space.xs }}
+      >
+        {STEPS.map((step, i) => (
+          <View key={step.phase} style={{
+            flex: 1, height: ui.px(10), borderRadius: 999,
+            backgroundColor: i < current ? colors.scarf : i === current ? colors.helmet : 'rgba(255, 255, 255, 0.45)',
+          }} />
+        ))}
+      </View>
+
+      {virtual !== null ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={virtual ? '가상 보행 끄기' : '가상 보행'}
+          onPress={onToggleVirtual}
+          style={{
+            minHeight: round, paddingHorizontal: ui.space.md, borderRadius: round,
+            backgroundColor: virtual ? colors.helmet : colors.background, justifyContent: 'center',
+          }}
+        >
+          <Text style={[ui.type.label, { color: virtual ? colors.onHelmet : colors.text }]}>
+            {virtual ? '가상 끄기' : '가상 보행'}
+          </Text>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
+/** 하단 시트. 단계마다 역두 표정과 문구 하나, 필요할 때만 버튼 하나 */
+function Sheet({ ui, bottom, phase, onAlighted }: {
+  ui: Ui; bottom: number; phase: TripPhase; onAlighted: () => void;
+}) {
+  const walking = phase === 'legA' || phase === 'legB';
+  return (
+    // 화면 가운데 카메라 위에 떠 있는 카드. 바깥 층은 터치를 카메라로 넘기고 카드만 받는다
+    <View pointerEvents="box-none" style={{
+      position: 'absolute', top: 0, left: 0, right: 0, bottom,
+      justifyContent: 'center',
+      paddingHorizontal: ui.space.lg,
+    }}>
+      <View style={{
+        width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', gap: ui.space.md,
+        // 배경만 70% 불투명(rgba). opacity를 쓰면 글자·버튼까지 비치므로 쓰지 않는다
+        backgroundColor: SHEET_BACKGROUND,
+        borderRadius: ui.radius.lg,
+        padding: ui.space.lg,
+      }}>
+        {walking ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: ui.space.md }}>
+            <Yeokdu pose="map" size={ui.px(64)} />
+            <View style={{ flex: 1, gap: ui.space.xs }}>
+              <Text style={[ui.type.label, { color: colors.scarfInk }]}>
+                {phase === 'legA' ? '출발역 안내' : '도착역 안내'}
+              </Text>
+              <Text style={ui.type.title} lineBreakStrategyIOS="hangul-word" accessibilityLiveRegion="polite">화살표 방향을 확인하세요</Text>
+            </View>
+          </View>
+        ) : null}
+
+        {phase === 'onTrain' ? (
+          <>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: ui.space.md }}>
+              <Yeokdu pose="basic" size={ui.px(72)} />
+              <View style={{ flex: 1, gap: ui.space.xs }} accessibilityLiveRegion="polite">
+                <Text style={[ui.type.label, { color: colors.muted }]}>열차 이동 중</Text>
+                <Text style={ui.type.title} lineBreakStrategyIOS="hangul-word">잠원역에서 1-1 문으로 내리세요</Text>
+              </View>
+            </View>
+            <Button label="내렸어요" onPress={onAlighted} />
+          </>
+        ) : null}
+
+        {phase === 'arrived' ? (
+          <View style={{ alignItems: 'center', gap: ui.space.sm }}>
+            <Yeokdu pose="cheer" size={ui.px(140)} />
+            <Text style={[ui.type.display, { textAlign: 'center' }]} accessibilityLiveRegion="polite">
+              도착했습니다
+            </Text>
+          </View>
+        ) : null}
+      </View>
+    </View>
+  );
+}
