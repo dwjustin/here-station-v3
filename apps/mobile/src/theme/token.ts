@@ -6,6 +6,7 @@ export const tokens = {
     muted: '#526174',
     primary: '#2459D3',
     border: '#D7DEE7',
+    onCamera: '#FFFFFF',
   },
   spacing: { sm: 8, md: 16, lg: 24, xl: 40 },
   fontSize: { body: 16, title: 28, hero: 40 },
