@@ -139,7 +139,28 @@ curl -X POST http://localhost:8000/routes \
   -d '{"origin_station_id":"hongje","destination_station_id":"jamwon"}'
 ```
 
-현재 홍제 1번 출구 → 잠원 1번 출구만 지원한다. 응답은 역(구간)마다 보행 칸 전부의 안내 방향이며, 형식은 [공유 형식](contracts/README.md)을 따른다. 로컬에서는 `data/maps/`(gitignore, 환경 변수 `MAP_DIR`로 변경 가능)에서 지도를 읽는다. Render(`RENDER=true` 자동 설정)에서는 `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `STORAGE_BUCKET=station-maps`로 버킷 루트의 `hongje.json`, `jamwon.json`을 내려받는다. 첫 요청 때 경로를 계산해 메모리에 두므로 지도 교체 후에는 서버를 재시작한다. 그 외 역 조합은 `404`, 누락·잘못된 타입·빈 문자열 입력은 `422`, 지도 파일 없음·Storage 연결 실패·설정 누락은 `503`, 잘못된 지도 형식은 `502`를 반환한다.
+현재 홍제 1번 출구 → 잠원 1번 출구만 지원한다. 응답은 역(구간)마다 보행 칸 전부의 안내 방향이며, 형식은 [공유 형식](contracts/README.md)을 따른다. 로컬에서는 `data/maps/`(gitignore, 환경 변수 `MAP_DIR`로 변경 가능)에서 지도를 읽는다. Render(`RENDER=true` 자동 설정)에서는 `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `STORAGE_BUCKET=station-maps`로 버킷 루트의 `hongje.json`, `jamwon.json`을 내려받는다. 지도는 역마다 첫 요청 때 한 번 읽어 메모리에 두므로(`grid.load_map` 캐시) 지도 교체 후에는 서버를 재시작한다. 경로 방향 계산, 승강장 연결(DB), 빠른하차 정보는 요청마다 새로 한다. 그 외 역 조합은 `404`, 누락·잘못된 타입·빈 문자열 입력은 `422`, 지도 파일 없음·Storage 연결 실패·설정 누락은 `503`, 잘못된 지도 형식은 `502`를 반환한다.
+
+### 말로 길 찾기와 음성 안내
+
+화면을 보지 않고 에어팟으로만 들으며 길을 찾을 수 있다.
+
+1. **시작 (말 → 경로)**: 첫 화면의 "말로 길 찾기"를 누르면 앱이 질문하고 바로 듣는다. 기기 음성 인식(`expo-speech-recognition`, 한국어)으로 만든 글자를 `POST /voice/turn`에 보낸다. 서버는 Claude(`claude-haiku-5-5`, effort `low`, 음성 대화라 지연이 짧은 모델)에 DB 역 목록과 함께 보내고, Claude는 역을 알아들으면 `find_route` 도구로 경로를 계산해 결과를 말로 설명한다. 역이 빠지면 한 가지만 되묻고, 앱은 화면을 누르지 않아도 다시 듣는다. 경로가 나오면 앱은 설명을 읽은 뒤 안내 화면으로 넘어간다.
+2. **걷는 동안 (규칙, LLM 안 씀)**: `apps/mobile/src/voice/voiceGuide.ts`가 화살표 각도를 "왼쪽으로 도세요", "앞으로 계속 가세요", "뒤로 돌아 주세요"로 바꾼다. 같은 방향이 1초 이어져야 말하고, 돌라는 말은 돌 때까지 8초마다 다시 한다. 화살표가 4초 동안 없으면 휴대폰을 들어 달라고 한다. 목적지 10m 안이면 한 번 알려 준다.
+3. **열차·도착**: 승강장에 닿으면 호선·방면·내릴 역·칸과 문 번호를 말한다. 열차 안에서는 "내렸어"라고 말하면(또는 버튼) 도착역 안내를 시작하고, 출구에 닿으면 도착을 알린다.
+
+말하기는 `GET /voice/tts?text=...`(ElevenLabs `eleven_flash_v2_5`, 한국어, mp3)를 재생한다. 같은 문장은 서버 메모리에 캐시한다. 서버나 네트워크가 안 되어 4초 안에 재생이 시작되지 않으면 기기 TTS(`expo-speech`)로 읽는다.
+
+```bash
+curl -X POST http://localhost:8000/voice/turn -H 'Content-Type: application/json' \
+  -d '{"messages":[{"role":"user","text":"홍제에서 잠원까지 가고 싶어"}]}'
+curl -o hello.mp3 --get http://localhost:8000/voice/tts --data-urlencode 'text=왼쪽으로 도세요.'
+```
+
+- 루트 `.env`에 `ANTHROPIC_API_KEY`, `ELEVENLABS_API_KEY`가 필요하다. `ELEVENLABS_VOICE_ID`로 목소리를 바꾼다(비우면 문서 예시 목소리). 키는 앱에 넣지 않는다.
+- 키가 없으면 `/voice/turn`·`/voice/tts`는 `503`이다. 앱은 말로 오류를 알리고, TTS는 기기 목소리로 바꿔 읽는다.
+- 위치 추정은 AR 카메라를 쓰므로 화면을 보지 않더라도 휴대폰은 카메라가 앞을 보게 가슴 앞에 들어야 한다. 주머니에 넣으면 화살표(방향)를 알 수 없어 "휴대폰을 들어 달라"고 안내한다. 안내 중에는 화면 잠금을 막는다.
+- 새 네이티브 모듈(음성 인식·오디오·화면 켜짐)과 마이크·음성 인식 권한이 추가되어 개발 빌드를 다시 해야 한다(`npm run ios -- --device`).
 
 백엔드 테스트는 `backend`에서 실행한다.
 
