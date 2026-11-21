@@ -1,14 +1,14 @@
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
-import * as Speech from 'expo-speech';
 import { ExpoSpeechRecognitionModule } from 'expo-speech-recognition';
 
 /**
- * 말하기(TTS)는 서버의 GET /voice/tts(ElevenLabs mp3)를 재생한다. 서버·네트워크가 안 되면 기기 TTS로 읽는다.
+ * 말하기(TTS)는 모두 서버의 GET /voice/tts(ElevenLabs 두더지 목소리 mp3)로 재생한다. 기기 목소리로 바꾸지 않는다.
+ * 실패하면 한 번 더 시도하고, 그래도 안 되면 소리 없이 넘어간다(같은 문장은 화면 카드에 보인다).
  * 듣기(STT)는 기기 음성 인식. 에어팟이 연결되어 있으면 iOS가 소리와 마이크를 에어팟으로 보낸다.
  */
 
-/** 이 시간 안에 재생이 시작되지 않으면 기기 TTS로 바꾼다 (ms) */
-const START_TIMEOUT_MS = 4000;
+/** 이 시간 안에 재생이 시작되지 않으면 실패로 본다 (ms) */
+const START_TIMEOUT_MS = 6000;
 const apiBaseUrl = (process.env.EXPO_PUBLIC_API_URL ?? '').replace(/\/+$/, '');
 
 let audioReady: Promise<void> | null = null;
@@ -44,11 +44,14 @@ export function isSpeaking(): boolean {
 async function speakNow(text: string): Promise<void> {
   audioReady ??= setAudioModeAsync({ playsInSilentMode: true }).catch(() => undefined);
   await audioReady;
+  if (!apiBaseUrl) return;
+  const url = `${apiBaseUrl}/voice/tts?text=${encodeURIComponent(text)}`;
+  const mine = generation;
   try {
-    if (!apiBaseUrl) throw new Error('no server');
-    await playUrl(`${apiBaseUrl}/voice/tts?text=${encodeURIComponent(text)}`);
+    await playUrl(url);
   } catch {
-    await deviceSpeak(text);
+    if (mine !== generation) return; // 그사이 새 안내가 끊고 들어왔으면 다시 읽지 않는다
+    await playUrl(url).catch(() => undefined);
   }
 }
 
@@ -71,20 +74,6 @@ function playUrl(url: string): Promise<void> {
     }
     stopCurrent = () => finish();
     player.play();
-  });
-}
-
-function deviceSpeak(text: string): Promise<void> {
-  return new Promise<void>((resolve) => {
-    const finish = () => {
-      stopCurrent = null;
-      resolve();
-    };
-    stopCurrent = () => {
-      void Speech.stop();
-      finish();
-    };
-    Speech.speak(text, { language: 'ko-KR', onDone: finish, onStopped: finish, onError: finish });
   });
 }
 
