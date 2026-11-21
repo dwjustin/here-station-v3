@@ -21,6 +21,8 @@ export default function RootLayout() {
         {/* 카메라가 화면 전체를 쓰고 뒤로 가기는 화면 안의 둥근 버튼이 맡는다 */}
         <Stack.Screen name="guide" options={{ title: '길 안내', headerShown: false }} />
         <Stack.Screen name="stations" options={{ title: '역 선택' }} />
+        <Stack.Screen name="preview" options={{ title: '경로 미리보기' }} />
+        <Stack.Screen name="voice" options={{ title: '말로 길 찾기' }} />
       </Stack>
     </RouteSessionProvider>
   );
