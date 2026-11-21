@@ -1,0 +1,23 @@
+import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+
+import { tokens } from '../theme/token';
+import { RouteSessionProvider } from '../state/RouteSession';
+
+export default function RootLayout() {
+  return (
+    <RouteSessionProvider>
+      <StatusBar style="dark" />
+      <Stack screenOptions={{
+        contentStyle: { backgroundColor: tokens.colors.background },
+        headerTintColor: tokens.colors.text,
+        headerTransparent: false,
+        headerStyle: { backgroundColor: tokens.colors.background },
+      }}>
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="guide" options={{ title: '길 안내' }} />
+        <Stack.Screen name="stations" options={{ title: '역 선택' }} />
+      </Stack>
+    </RouteSessionProvider>
+  );
+}
