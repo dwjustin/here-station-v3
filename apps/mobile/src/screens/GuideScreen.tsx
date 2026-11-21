@@ -130,6 +130,9 @@ function TripView({ route }: { route: RouteResponse }) {
   );
 }
 
+/** 떠 있는 카드 배경: colors.background(#FFFBF4)를 70% 불투명으로 */
+const SHEET_BACKGROUND = 'rgba(255, 251, 244, 0.7)';
+
 const STEPS: { phase: TripPhase; name: string }[] = [
   { phase: 'legA', name: '출발역' },
   { phase: 'onTrain', name: '열차' },
@@ -204,15 +207,19 @@ function Sheet({ ui, bottom, phase, onAlighted }: {
 }) {
   const walking = phase === 'legA' || phase === 'legB';
   return (
-    <View style={{
-      position: 'absolute', left: 0, right: 0, bottom: 0,
-      backgroundColor: colors.background,
-      borderTopLeftRadius: ui.radius.lg, borderTopRightRadius: ui.radius.lg,
-      paddingTop: ui.space.lg,
-      paddingBottom: bottom + ui.space.md,
+    // 화면 가운데 카메라 위에 떠 있는 카드. 바깥 층은 터치를 카메라로 넘기고 카드만 받는다
+    <View pointerEvents="box-none" style={{
+      position: 'absolute', top: 0, left: 0, right: 0, bottom,
+      justifyContent: 'center',
       paddingHorizontal: ui.space.lg,
     }}>
-      <View style={{ width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', gap: ui.space.md }}>
+      <View style={{
+        width: '100%', maxWidth: CONTENT_MAX_WIDTH, alignSelf: 'center', gap: ui.space.md,
+        // 배경만 70% 불투명(rgba). opacity를 쓰면 글자·버튼까지 비치므로 쓰지 않는다
+        backgroundColor: SHEET_BACKGROUND,
+        borderRadius: ui.radius.lg,
+        padding: ui.space.lg,
+      }}>
         {walking ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: ui.space.md }}>
             <Yeokdu pose="map" size={ui.px(64)} />
