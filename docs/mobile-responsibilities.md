@@ -1,6 +1,6 @@
 # 모바일
 
-React Native + TypeScript + Expo Development Build로 작성할 앱의 자리다. 아직 앱 프로젝트를 생성하지 않았다.
+React Native + TypeScript + Expo Development Build로 작성한 모바일 앱이다. 역 검색, mock 경로 요청, 카메라와 안내 카드의 기본 흐름이 연결되어 있다.
 
 담당 범위:
 
@@ -12,4 +12,4 @@ React Native + TypeScript + Expo Development Build로 작성할 앱의 자리다
 
 센서 수집, 위치 추정, API 호출, 화면 그리기를 각각 모듈로 나눈다. 센서 이벤트마다 서버를 호출하지 않는다. 서버 비밀 키는 앱에 넣지 않는다. 층별 PNG는 사용하지 않는다.
 
-Expo 초기 프로젝트를 만들 때 이 안내 파일은 필요하면 `docs/`로 옮긴다. AR 모듈을 정한 뒤 Expo·React Native와 호환되는 버전을 함께 고정한다.
+팀별 작업 위치는 루트 `README.md`, 방향·도착 처리 연결부는 `apps/mobile/src/navigation/README.md`를 참고한다. 현재 카메라 위에 나침반을 겹쳐 표시하며 실제 위치·방향 추정과 자동 도착 판정은 후속 작업이다.

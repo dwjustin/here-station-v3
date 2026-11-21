@@ -1,0 +1,10 @@
+**
+!backend/
+!backend/pyproject.toml
+!backend/app/
+!backend/app/**
+!contracts/
+!contracts/examples/
+!contracts/examples/route.json
+**/__pycache__/
+**/*.pyc

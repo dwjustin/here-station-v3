@@ -1,0 +1,355 @@
+{
+  "schema_version": "0.1-draft",
+  "is_mock": true,
+  "description": "일원역 1번 출구 → 학여울역 1번 출구 UI·함수 연결용 예시. 노드 POI·좌표는 원본 값이며, 노드 방문 순서와 모든 엣지는 mock이다. 최적 경로 또는 실제 보행 가능한 경로가 아니다.",
+  "coordinate_system": {
+    "scope": "station_local",
+    "unit": "m",
+    "x": "east",
+    "z": "south",
+    "h": "height_relative_to_station_origin"
+  },
+  "maps": {
+    "ilwon": {
+      "name": "일원",
+      "source_file": "ilwon.json",
+      "content_sha256": "32ea0b1f427f46bfead392c4ee67251264d20f8cb81a2ae9c97f7450db430160",
+      "origin": {
+        "exitNo": 1,
+        "lat": 37.4843515,
+        "lon": 127.0837538
+      }
+    },
+    "hakyeoul": {
+      "name": "학여울",
+      "source_file": "hakyeoul.json",
+      "content_sha256": "4ada8cd26f08543e92b2e5c8ddba19b567d8abf5ad07b1ae5e3329aebfd2f791",
+      "origin": {
+        "exitNo": 1,
+        "lat": 37.4963011,
+        "lon": 127.0706501
+      }
+    }
+  },
+  "origin_node_id": "ilwon:exit2",
+  "destination_node_id": "hakyeoul:exit5",
+  "nodes": [
+    {
+      "id": "ilwon:exit2",
+      "station_id": "ilwon",
+      "poi_id": "exit2",
+      "name": "1번 출구",
+      "kind": "exit",
+      "level": "1F",
+      "position": {
+        "x": 0.63,
+        "z": -0.13,
+        "h": 0
+      },
+      "exit_no": "1"
+    },
+    {
+      "id": "ilwon:stairs1a",
+      "station_id": "ilwon",
+      "poi_id": "stairs1a",
+      "name": "계단 1 위 (B1)",
+      "kind": "stairs",
+      "level": "B1",
+      "position": {
+        "x": 7.13,
+        "z": 12.13,
+        "h": -7.79
+      }
+    },
+    {
+      "id": "ilwon:stairs1b",
+      "station_id": "ilwon",
+      "poi_id": "stairs1b",
+      "name": "계단 1 아래 (B2)",
+      "kind": "stairs",
+      "level": "B2",
+      "position": {
+        "x": 17.13,
+        "z": 10.63,
+        "h": -11.24
+      }
+    },
+    {
+      "id": "ilwon:stairs3a",
+      "station_id": "ilwon",
+      "poi_id": "stairs3a",
+      "name": "계단 3 위 (B2)",
+      "kind": "stairs",
+      "level": "B2",
+      "position": {
+        "x": 75.13,
+        "z": 14.38,
+        "h": -12.34
+      }
+    },
+    {
+      "id": "ilwon:stairs3b",
+      "station_id": "ilwon",
+      "poi_id": "stairs3b",
+      "name": "계단 3 아래 (B3)",
+      "kind": "stairs",
+      "level": "B3",
+      "position": {
+        "x": 71.13,
+        "z": 9.13,
+        "h": -15.75
+      }
+    },
+    {
+      "id": "ilwon:platform1",
+      "station_id": "ilwon",
+      "poi_id": "platform1",
+      "name": "승강장 1 (B3)",
+      "kind": "platform",
+      "level": "B3",
+      "position": {
+        "x": 79.63,
+        "z": 17.13,
+        "h": -16.19
+      }
+    },
+    {
+      "id": "hakyeoul:platform1",
+      "station_id": "hakyeoul",
+      "poi_id": "platform1",
+      "name": "승강장 1 (B5)",
+      "kind": "platform",
+      "level": "B5",
+      "position": {
+        "x": 75.38,
+        "z": -53.63,
+        "h": -14.57
+      }
+    },
+    {
+      "id": "hakyeoul:stairs4b",
+      "station_id": "hakyeoul",
+      "poi_id": "stairs4b",
+      "name": "계단 4 아래 (B5)",
+      "kind": "stairs",
+      "level": "B5",
+      "position": {
+        "x": 53.88,
+        "z": -53.38,
+        "h": -13.96
+      }
+    },
+    {
+      "id": "hakyeoul:stairs4a",
+      "station_id": "hakyeoul",
+      "poi_id": "stairs4a",
+      "name": "계단 4 위 (B4)",
+      "kind": "stairs",
+      "level": "B4",
+      "position": {
+        "x": 62.88,
+        "z": -55.13,
+        "h": -12.07
+      }
+    },
+    {
+      "id": "hakyeoul:stairs6b",
+      "station_id": "hakyeoul",
+      "poi_id": "stairs6b",
+      "name": "계단 6 아래 (B4)",
+      "kind": "stairs",
+      "level": "B4",
+      "position": {
+        "x": 18.63,
+        "z": -33.63,
+        "h": -10.98
+      }
+    },
+    {
+      "id": "hakyeoul:stairs6a",
+      "station_id": "hakyeoul",
+      "poi_id": "stairs6a",
+      "name": "계단 6 위 (B3)",
+      "kind": "stairs",
+      "level": "B3",
+      "position": {
+        "x": 12.13,
+        "z": -33.13,
+        "h": -9
+      }
+    },
+    {
+      "id": "hakyeoul:stairs7b",
+      "station_id": "hakyeoul",
+      "poi_id": "stairs7b",
+      "name": "계단 7 아래 (B3)",
+      "kind": "stairs",
+      "level": "B3",
+      "position": {
+        "x": 6.88,
+        "z": -29.88,
+        "h": -7.97
+      }
+    },
+    {
+      "id": "hakyeoul:stairs7a",
+      "station_id": "hakyeoul",
+      "poi_id": "stairs7a",
+      "name": "계단 7 위 (B2)",
+      "kind": "stairs",
+      "level": "B2",
+      "position": {
+        "x": 0.38,
+        "z": -29.63,
+        "h": -6.05
+      }
+    },
+    {
+      "id": "hakyeoul:stairs17b",
+      "station_id": "hakyeoul",
+      "poi_id": "stairs17b",
+      "name": "계단 17 아래 (B2)",
+      "kind": "stairs",
+      "level": "B2",
+      "position": {
+        "x": 9.63,
+        "z": -17.63,
+        "h": -5.04
+      }
+    },
+    {
+      "id": "hakyeoul:stairs17a",
+      "station_id": "hakyeoul",
+      "poi_id": "stairs17a",
+      "name": "계단 17 위 (B1)",
+      "kind": "stairs",
+      "level": "B1",
+      "position": {
+        "x": 13.88,
+        "z": -18.63,
+        "h": -3.01
+      }
+    },
+    {
+      "id": "hakyeoul:exit5",
+      "station_id": "hakyeoul",
+      "poi_id": "exit5",
+      "name": "1번 출구",
+      "kind": "exit",
+      "level": "1F",
+      "position": {
+        "x": -3.13,
+        "z": -1.63,
+        "h": 0
+      },
+      "exit_no": "1"
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-01",
+      "from_node_id": "ilwon:exit2",
+      "to_node_id": "ilwon:stairs1a",
+      "kind": "stairs",
+      "instruction": "B1으로 내려가세요. (예시 연결)"
+    },
+    {
+      "id": "edge-02",
+      "from_node_id": "ilwon:stairs1a",
+      "to_node_id": "ilwon:stairs1b",
+      "kind": "stairs",
+      "instruction": "B2으로 내려가세요. (예시 연결)"
+    },
+    {
+      "id": "edge-03",
+      "from_node_id": "ilwon:stairs1b",
+      "to_node_id": "ilwon:stairs3a",
+      "kind": "walk",
+      "instruction": "계단 3 위 (B2)(으)로 이동하세요. (예시 연결)"
+    },
+    {
+      "id": "edge-04",
+      "from_node_id": "ilwon:stairs3a",
+      "to_node_id": "ilwon:stairs3b",
+      "kind": "stairs",
+      "instruction": "B3으로 내려가세요. (예시 연결)"
+    },
+    {
+      "id": "edge-05",
+      "from_node_id": "ilwon:stairs3b",
+      "to_node_id": "ilwon:platform1",
+      "kind": "walk",
+      "instruction": "승강장 1 (B3)(으)로 이동하세요. (예시 연결)"
+    },
+    {
+      "id": "edge-06",
+      "from_node_id": "ilwon:platform1",
+      "to_node_id": "hakyeoul:platform1",
+      "kind": "rail",
+      "instruction": "열차로 학여울역까지 이동하세요. (승강장·운행 정보 미검증)"
+    },
+    {
+      "id": "edge-07",
+      "from_node_id": "hakyeoul:platform1",
+      "to_node_id": "hakyeoul:stairs4b",
+      "kind": "walk",
+      "instruction": "계단 4 아래 (B5)(으)로 이동하세요. (예시 연결)"
+    },
+    {
+      "id": "edge-08",
+      "from_node_id": "hakyeoul:stairs4b",
+      "to_node_id": "hakyeoul:stairs4a",
+      "kind": "stairs",
+      "instruction": "B4으로 올라가세요. (예시 연결)"
+    },
+    {
+      "id": "edge-09",
+      "from_node_id": "hakyeoul:stairs4a",
+      "to_node_id": "hakyeoul:stairs6b",
+      "kind": "walk",
+      "instruction": "계단 6 아래 (B4)(으)로 이동하세요. (예시 연결)"
+    },
+    {
+      "id": "edge-10",
+      "from_node_id": "hakyeoul:stairs6b",
+      "to_node_id": "hakyeoul:stairs6a",
+      "kind": "stairs",
+      "instruction": "B3으로 올라가세요. (예시 연결)"
+    },
+    {
+      "id": "edge-11",
+      "from_node_id": "hakyeoul:stairs6a",
+      "to_node_id": "hakyeoul:stairs7b",
+      "kind": "walk",
+      "instruction": "계단 7 아래 (B3)(으)로 이동하세요. (예시 연결)"
+    },
+    {
+      "id": "edge-12",
+      "from_node_id": "hakyeoul:stairs7b",
+      "to_node_id": "hakyeoul:stairs7a",
+      "kind": "stairs",
+      "instruction": "B2으로 올라가세요. (예시 연결)"
+    },
+    {
+      "id": "edge-13",
+      "from_node_id": "hakyeoul:stairs7a",
+      "to_node_id": "hakyeoul:stairs17b",
+      "kind": "walk",
+      "instruction": "계단 17 아래 (B2)(으)로 이동하세요. (예시 연결)"
+    },
+    {
+      "id": "edge-14",
+      "from_node_id": "hakyeoul:stairs17b",
+      "to_node_id": "hakyeoul:stairs17a",
+      "kind": "stairs",
+      "instruction": "B1으로 올라가세요. (예시 연결)"
+    },
+    {
+      "id": "edge-15",
+      "from_node_id": "hakyeoul:stairs17a",
+      "to_node_id": "hakyeoul:exit5",
+      "kind": "stairs",
+      "instruction": "1F으로 올라가세요. (예시 연결)"
+    }
+  ]
+}

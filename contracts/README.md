@@ -2,6 +2,10 @@
 
 아래 항목은 합의할 목록이며, 확정된 JSON 스키마나 구현된 API가 아니다.
 
+## 실행 흐름용 예시
+
+[examples/route.json](examples/route.json)은 일원역 1번 출구에서 학여울역 1번 출구까지의 **mock 경로 응답**이다. 원본 POI·좌표를 사용하지만 경로 연결은 검증하지 않았다. 형식과 사용 방법은 [예시 설명](examples/README.md)을 참고한다. 팀 구현에 맞춰 바꿀 초안이며, 전체 지도나 확정된 API 스키마가 아니다.
+
 ## 지도
 
 - 역 ID, 지도 버전, 스키마 버전
@@ -13,6 +17,26 @@
 기존 `nav/core.js`는 `x,z`를 평면, `h`를 높이로 사용한다. 새 형식을 정할 때 기존 데이터와의 변환도 함께 정한다.
 
 ## API
+
+### 역 검색 초안
+
+`GET /stations?q=검색어`는 `{"stations": [...]}` 형태를 반환한다. 검색어 생략·빈 검색어는 전체 목록, 일치하는 역이 없으면 빈 배열이다. 출발·도착에 같은 목록을 사용한다.
+
+| 역 필드 | 타입 | 의미 |
+| --- | --- | --- |
+| `id` | 문자열, 1~100자 | 경로 요청에서 사용하는 역 ID. 이름이나 호선이 바뀌어도 유지 |
+| `name` | 문자열, 1~100자 | 표시 이름. 예: `일원` |
+| `lines` | 문자열 배열, 1개 이상 | 호선 ID 목록. 각 ID 1~20자. 예: `["3"]`, 환승역은 여러 개 |
+
+실행되는 Pydantic 모델은 `backend/app/stations/schemas.py`에 있다. 이는 DB 테이블 정의가 아닌 API 데이터 모델 초안이며, 필요에 따라 예시·프론트 타입과 함께 변경한다.
+
+### 지도 메타데이터 초안
+
+`StationMap`은 `Station`과 별도 모델이다. `id`(UUID), `station_id`, `version`, `storage_bucket`, `map_path`, 선택값 `glb_path`를 담는다. 지도 좌표계·보행 격자·노드·엣지 전체는 지도 파일에 두며 역 검색 응답에 넣지 않는다. 지도 메타데이터 조회 API는 아직 없다.
+
+DB의 `station_maps.station_id`는 `stations.id`를 참조하고 `(station_id, version)`은 유일하다. 실제 테이블 정의는 `infra/supabase/migrations/20261119000000_create_stations_and_station_maps.sql`이 기준이다. API 모델의 `Station.id`와 `StationMap.id`는 각각 문자열과 UUID로 서로 다른 식별자다.
+
+### 후속 합의 항목
 
 - 역 검색과 역 상세 조회
 - 지도 버전과 파일 다운로드 주소 조회

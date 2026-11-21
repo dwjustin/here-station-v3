@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "Here Station",
+    "slug": "here-station",
+    "scheme": "herestation",
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "주변을 보며 길을 안내받으려면 카메라 접근을 허용해 주세요.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": false
+        }
+      ]
+    ],
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "bundleIdentifier": "com.dwjustin.herestation",
+      "appleTeamId": "6M9WRXSJ53",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.dwjustin.herestation",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}
