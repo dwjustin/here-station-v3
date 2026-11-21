@@ -3,7 +3,9 @@ import unittest
 from array import array
 
 from app.routing.field import NO_DIRECTION, directions, distance_field
-from app.routing.grid import MAX_STEP_CM, StationGrid, pack
+from app.routing.grid import MAP_DIR, MAX_STEP_CM, StationGrid, load_map, pack, unpack
+from app.routing.places import OGEUM_BOUND, door_1_1, exit_node, platform_nodes
+from app.routing.service import build_leg
 
 W = 40
 
@@ -93,3 +95,42 @@ class FieldTests(unittest.TestCase):
         self.assertEqual(direction[node_at(grid, 0, 1, 0)], 2700)  # 서쪽
 
 
+@unittest.skipUnless((MAP_DIR / "hongje.json").exists() and (MAP_DIR / "jamwon.json").exists(), "data/maps 없음")
+class RealMapTests(unittest.TestCase):
+    def test_exits_found_by_exit_number(self):
+        for station_id, poi_id in [("hongje", "exit1"), ("jamwon", "exit3")]:
+            with self.subTest(station_id=station_id):
+                grid = load_map(station_id)
+                poi = next(p for p in grid.doc["pois"] if p["id"] == poi_id)
+                x, z, h = grid.xyz(exit_node(grid, "1"))
+                self.assertLess(math.dist((x, z, h), (poi["x"], poi["z"], poi["h"])), 0.5)
+
+    def test_door_on_platform_level(self):
+        for station_id, spec in OGEUM_BOUND.items():
+            with self.subTest(station_id=station_id):
+                grid = load_map(station_id)
+                poi = next(p for p in grid.doc["pois"] if p["id"] == spec["platform"])
+                door = door_1_1(grid)
+                self.assertEqual(grid.level(door), poi["level"])
+                self.assertIn(door, platform_nodes(grid, poi))
+
+    def test_debug_legs_reach_goal(self):
+        # 이 추정점은 알고리즘 회귀 검사에만 사용한다. 실제 /routes는 실측 문 자료가 필요하다.
+        hongje, jamwon = load_map("hongje"), load_map("jamwon")
+        legs = [build_leg(hongje, exit_node(hongje, "1"), door_1_1(hongje), 2.0),
+                build_leg(jamwon, door_1_1(jamwon), exit_node(jamwon, "1"), 1.5)]
+        for leg in legs:
+            with self.subTest(station_id=leg["station_id"]):
+                grid = load_map(leg["station_id"])
+                direction = unpack(leg["direction"], "H")
+                self.assertEqual(len(direction), len(grid.cells))
+                start = grid.nearest(leg["start"]["x"], leg["start"]["z"], leg["start"]["h"])
+                goal = grid.nearest(leg["goal"]["x"], leg["goal"]["z"], leg["goal"]["h"])
+                dist, _ = distance_field(grid.neighbors, goal)
+                self.assertTrue(math.isfinite(dist[start]))
+                self.assertEqual(direction[goal], NO_DIRECTION)
+                self.assertEqual(leg["start"]["heading_deg"], direction[start] / 10)
+
+
+if __name__ == "__main__":
+    unittest.main()

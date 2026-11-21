@@ -116,9 +116,9 @@ class StationTests(unittest.TestCase):
         request = self.urlopen.call_args.args[0]
         self.assertEqual(urlparse(request.full_url).path, "/rest/v1/station_platforms")
         params = parse_qs(urlparse(request.full_url).query)
-        self.assertEqual(params["station_id"], ["eq.policehosp"])
-        self.assertEqual(params["line_name"], ["eq.3호선"])
-        self.assertEqual(params["up_down"], ["eq.상행"])
+        self.assertEqual(params["station_id"], ['in.("policehosp")'])
+        self.assertEqual(params["line_name"], ['in.("3호선")'])
+        self.assertEqual(params["up_down"], ['in.("상행")'])
         self.rows = [{**row, "platform_poi_id": "new-poi"}]
         self.assertEqual(get_platform_poi_id("policehosp", "3호선", "상행"), "new-poi")
         self.assertEqual(request.get_header("Apikey"), "test-secret")
@@ -145,14 +145,13 @@ class StationTests(unittest.TestCase):
             get_platform_poi_id("policehosp", "3호선", "상행")
         self.assertEqual(error.exception.status_code, 503)
 
-    def test_platform_filter_values_are_url_encoded_without_literal_quotes(self):
+    def test_platform_filter_values_are_quoted_in_list(self):
         self.rows = []
-        value = 'custom,"up_down"&up_down=eq.하행'
+        value = 'custom,"up_down"'
         with self.assertRaises(HTTPException):
             get_platform_poi_id(value, "3호선", "상행")
         params = parse_qs(urlparse(self.urlopen.call_args.args[0].full_url).query)
-        self.assertEqual(params["station_id"], ["eq." + value])
-        self.assertEqual(params["up_down"], ["eq.상행"])
+        self.assertEqual(params["station_id"], ["in.(" + json.dumps(value) + ")"])
 
 
 class StationMapTests(unittest.TestCase):

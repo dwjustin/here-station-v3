@@ -62,5 +62,6 @@ test('decodes grid arrays and rejects invalid platform nodes and array lengths',
     assert.throws(() => decodeLeg({ ...raw, platform: { ...raw.platform, nodes } }), /승강장/);
   }
   assert.throws(() => decodeLeg({ ...raw, h: '' }), /배열/);
+  assert.throws(() => decodeLeg({ ...raw, cells: encode(new Int32Array([-1, 1])) }), /배열/);
   assert.throws(() => decodeLeg({ ...raw, grid: { ...raw.grid, cell: 0 } }), /좌표/);
 });

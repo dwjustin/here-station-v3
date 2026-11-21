@@ -1,6 +1,6 @@
 # 모바일
 
-React Native + TypeScript + Expo Development Build로 작성한 모바일 앱이다. 역 검색, 선택한 역에 따른 실제 경로 요청, 카메라와 여정 안내 카드가 연결되어 있다. 위치 추적 연결 전이므로 도착·탑승·하차는 사용자가 확인한다.
+React Native + TypeScript + Expo Development Build로 작성한 모바일 앱이다. 역 검색, 홍제 → 잠원 경로 요청, AR 카메라 위 화살표 안내가 연결되어 있다.
 
 담당 범위:
 
@@ -8,8 +8,8 @@ React Native + TypeScript + Expo Development Build로 작성한 모바일 앱이
 - 지도 파일 다운로드·버전별 기기 캐시
 - 센서 수집과 현재 위치 추정
 - 지도 좌표와 AR 좌표를 맞추는 처리
-- 위치·방향·AR 경로 갱신과 경로 이탈 판단
+- 위치·방향 갱신과 밟은 칸의 방향으로 화살표 표시 (보행 칸을 벗어나면 화살표를 숨김)
 
 센서 수집, 위치 추정, API 호출, 화면 그리기를 각각 모듈로 나눈다. 센서 이벤트마다 서버를 호출하지 않는다. 서버 비밀 키는 앱에 넣지 않는다. 층별 PNG는 사용하지 않는다.
 
-팀별 작업 위치는 루트 `README.md`, 방향·도착 처리 연결부는 `apps/mobile/src/navigation/README.md`를 참고한다. 현재 카메라 위에 나침반을 겹쳐 표시하며 실제 위치·방향 추정과 자동 도착 판정은 후속 작업이다.
+팀별 작업 위치는 루트 `README.md`, 방향·도착 처리 연결부는 `apps/mobile/src/navigation/README.md`를 참고한다. 위치 추적은 `apps/mobile/src/localization/`(AR + PDR 입자 필터)에 있고, 실기기 센서 확인은 후속 작업이다.

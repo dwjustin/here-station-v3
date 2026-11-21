@@ -16,7 +16,7 @@ export type RouteLeg = {
   direction: string; // base64 Uint16 LE, 방위 0.1° 단위, 65535 = 방향 없음
 };
 
-export type TripInfo = {
+export type RouteTrip = {
   origin_station_id: string;
   origin_station_name: string;
   destination_station_id: string;
@@ -30,7 +30,7 @@ export type TripInfo = {
   destination_walk_m: number;
 };
 
-export type RouteResponse = { trip: TripInfo; legs: RouteLeg[] };
+export type RouteResponse = { trip: RouteTrip; legs: RouteLeg[] };
 
 export type DecodedLeg = {
   grid: GridSpec;

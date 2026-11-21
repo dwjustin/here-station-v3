@@ -47,7 +47,7 @@ class RouteTests(unittest.TestCase):
         origin, destination = platform_grid("hongje"), platform_grid("jamwon")
         with patch("app.routing.service.load_map", side_effect=[origin, destination]), \
              patch("app.routing.service.get_fast_exit_rows", return_value=[fast_exit_row()]), \
-             patch("app.routing.grid.read_map_file", side_effect=FileNotFoundError):
+             patch("app.routing.places.read_map_file", side_effect=FileNotFoundError):
             response = self.client.post("/routes", json=self.request)
         self.assertEqual(response.status_code, 200, response.text)
         self.assertEqual(response.json()["legs"][0]["platform"]["id"], "platform1")

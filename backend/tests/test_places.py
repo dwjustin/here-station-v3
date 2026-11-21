@@ -1,7 +1,39 @@
+import json
 import unittest
+from unittest.mock import patch
 
-from app.routing.places import platform_access
-from tests.routing_fixtures import platform_grid
+from fastapi import HTTPException
+
+from app.routing.places import door_nodes, load_door_positions, platform_access
+from tests.routing_fixtures import door_data, make_grid, platform_grid
+
+
+class DoorPositionTests(unittest.TestCase):
+    def setUp(self):
+        self.grid = make_grid("hongje")
+        self.profile = door_data(self.grid, 1, "무악재")
+        self.doc = {"station_id": "hongje", "map_revision": self.grid.revision, "profiles": [self.profile]}
+
+    def test_sidecar_matches_line_direction_next_station_and_map_revision(self):
+        with patch("app.routing.places.read_map_file", return_value=json.dumps(self.doc).encode()) as read:
+            data = load_door_positions(self.grid, "3호선", "하행", "무악재")
+        read.assert_called_once_with("hongje.doors.json")
+        self.assertEqual(door_nodes(self.grid, data, "3호선", "하행")["4-2"], 1)
+
+    def test_missing_wrong_direction_and_duplicate_profiles_are_unsupported(self):
+        with patch("app.routing.places.read_map_file", side_effect=FileNotFoundError), self.assertRaises(HTTPException) as error:
+            load_door_positions(self.grid, "3호선", "하행", "무악재")
+        self.assertEqual(error.exception.status_code, 422)
+        for profiles in [[], [self.profile, self.profile]]:
+            with patch("app.routing.places.read_map_file", return_value=json.dumps({**self.doc, "profiles": profiles}).encode()), self.assertRaises(HTTPException) as error:
+                load_door_positions(self.grid, "3호선", "하행", "무악재")
+            self.assertEqual(error.exception.status_code, 422)
+
+    def test_malformed_sidecar(self):
+        for raw in [b"not json", b"null", b"{}", b'{"profiles":[null]}']:
+            with self.subTest(raw=raw), patch("app.routing.places.read_map_file", return_value=raw), self.assertRaises(HTTPException) as error:
+                load_door_positions(self.grid, "3호선", "하행", "무악재")
+            self.assertEqual(error.exception.status_code, 502)
 
 
 class PlatformTests(unittest.TestCase):

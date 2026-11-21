@@ -21,6 +21,16 @@ def trip():
                 "3호선", "하행", "무악재", "고속터미널")
 
 
+def door_data(grid, nearby_node, next_station):
+    return {
+        "station_id": grid.doc["id"], "map_revision": grid.revision,
+        "line_name": "3호선", "up_down": "하행", "next_station": next_station,
+        "verified": True, "source": "synthetic test fixture", "position_reference": "train-car-door",
+        "positions": {"1-1": dict(zip(("x", "z", "h"), grid.xyz(5))),
+                      "4-2": dict(zip(("x", "z", "h"), grid.xyz(nearby_node)))},
+    }
+
+
 def fast_exit_row(door="4-2"):
     return {"qckgffMngNo": "1497", "stnNm": "잠원", "stnCd": "0328", "lineNm": "3호선",
             "upbdnbSe": "하행", "drtnInfo": "고속터미널", "qckgffVhclDoorNo": door,

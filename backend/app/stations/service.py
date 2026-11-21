@@ -48,8 +48,9 @@ def search_stations(query: str) -> list[Station]:
 
 def get_platform_poi_id(station_id: str, line_name: str, up_down: str) -> str:
     filters = {"station_id": station_id, "line_name": line_name, "up_down": up_down}
+    # PostgREST의 eq."value"는 따옴표까지 값으로 비교한다. in.("value")는 인용·이스케이프를 올바르게 처리한다.
     params = {"select": "station_id,line_name,up_down,platform_poi_id",
-              **{key: f"eq.{value}" for key, value in filters.items()}}
+              **{key: f"in.({json.dumps(value, ensure_ascii=False)})" for key, value in filters.items()}}
     rows = _read_rows("station_platforms", params)
     if not rows:
         raise HTTPException(status_code=422, detail=f"{station_id}: DB에 {line_name} {up_down} 승강장 연결이 없습니다.")

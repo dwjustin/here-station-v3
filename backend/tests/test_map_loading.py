@@ -8,6 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 from urllib.error import HTTPError, URLError
 
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -35,6 +36,8 @@ class MapLoadingTests(unittest.TestCase):
         resolver.start()
         self.addCleanup(resolver.stop)
         self.client = TestClient(app)
+        grid.load_map.cache_clear()
+        self.addCleanup(grid.load_map.cache_clear)
 
     def test_render_downloads_each_map_and_preserves_revision(self):
         with patch.object(Path, "read_bytes", side_effect=AssertionError("Render must not read local maps")):
@@ -53,6 +56,17 @@ class MapLoadingTests(unittest.TestCase):
                     self.assertEqual(request.get_header("Apikey"), "sb_secret_test")
                     self.assertIsNone(request.get_header("Authorization"))
                     self.assertEqual(self.download.call_args.kwargs["timeout"], 10)
+
+    def test_map_is_downloaded_once_per_station(self):
+        first = grid.load_map("hongje")
+        self.assertIs(grid.load_map("hongje"), first)
+        self.assertEqual(self.download.call_count, 1)
+        grid.load_map.cache_clear()
+        self.download.side_effect = URLError("down")
+        with self.assertRaises(HTTPException):
+            grid.load_map("hongje")
+        self.download.side_effect = lambda *a, **kw: BytesIO(self.raw)
+        self.assertEqual(list(grid.load_map("hongje").cells), [0, 1])  # 실패는 캐시되지 않아 다시 받는다
 
     def test_local_uses_files_even_with_supabase_configured(self):
         with tempfile.TemporaryDirectory() as directory, patch.object(grid, "MAP_DIR", Path(directory)):

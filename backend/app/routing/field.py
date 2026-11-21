@@ -1,4 +1,4 @@
-"""목적지 칸에서 거꾸로 Dijkstra → 칸마다 화살표 방위. """
+"""목적지 칸에서 거꾸로 Dijkstra → 칸마다 화살표 방위."""
 
 import heapq
 import math
@@ -7,7 +7,7 @@ from array import array
 from app.routing.grid import MAX_STEP_CM, StationGrid
 
 # 인접 칸(45° 단위) 대신 경로를 이만큼 따라간 점을 가리켜 화살표를 부드럽게 한다.
-# 그 점까지 직선이 벽·난간을 지나면 보이는 가장 먼 경로 점을 가리킨다 (M4 가상 보행에서 안쪽 모퉁이·꺾인 계단에서 벽을 가리켜 막혔다).
+# 그 점까지 직선이 벽·난간을 지나면 보이는 가장 먼 경로 점을 가리킨다 (가상 보행에서 안쪽 모퉁이·꺾인 계단에서 벽을 가리켜 막혔다).
 LOOKAHEAD_M = 3.0
 NO_DIRECTION = 65535
 

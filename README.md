@@ -1,8 +1,8 @@
-# Here Station v3
+# Here Station
 
 지하철역 실내 길안내 앱. 새 코드와 데이터 형식을 팀이 함께 정하기 위한 시작 레포지토리다.
 
-v2의 모바일 안내·역 조회 구조를 바탕으로, 사용자가 선택한 출발·도착역의 지도로 실제 경로를 계산한다. 위치 추적과 카메라 방향 계산은 팀 연결용 TODO다.
+v2의 `d17331b`(서버 기본 구조) 다음 커밋인 `93ee544`(모바일 안내·역 조회 API)를 재현한 단계다. 초기 패키지와 실행 스크립트는 해당 커밋을 기준으로 하며, iOS 개발 빌드 실행 오류 수정은 별도로 반영했다.
 
 ## 기술과 역할
 
@@ -22,6 +22,8 @@ v2의 모바일 안내·역 조회 구조를 바탕으로, 사용자가 선택�
 | `apps/mobile/` | 모바일 앱 |
 | `backend/app/` | API와 서버 경로 계산 |
 | `tools/map-preprocess/` | GLB에서 정보 추출 |
+| `tools/map-check/` | GLB → JSON 팀이 지도를 넘기기 전 돌리는 점검 |
+| `tools/route-inspect/` | 서버 경로 결과 눈으로 확인, 가상 보행 고정 데이터 생성 |
 | `contracts/` | 팀이 합의할 API·지도 형식 |
 | `infra/` | DB·스토리지·배포 설정 |
 | `docs/` | 구조와 협업 방법 |
@@ -70,7 +72,7 @@ Metro 없이 실행하려면 `apps/mobile`에서 `npm run ios:standalone`으로 
 
 ## 1. GLB → JSON 팀
 
-- 전처리 코드: `tools/map-preprocess/`.
+- 전처리 코드: `tools/map-preprocess/`. 넘기기 전 `tools/map-check/`로 점검한다.
 - 파일은 Supabase Storage의 비공개 `station-maps` 버킷에 저장한다.
 
 | 파일 | 버킷 안의 경로 |
@@ -84,9 +86,9 @@ contracts 바꾸게 되면 알려주세용(코드 반영해야됨.).
 ## 2. 위치 추적 팀
 
 - 초기 위치·방향 설정, 센서 기반 추적·오차 보정, 추적 시작·종료를 구현한다.
-- 추적 코드: `apps/mobile/src/localization/`에 추가한다.
-- 방향 계산: `apps/mobile/src/navigation/calculateCompassDirection.ts`의 TODO를 구현한다.
-- 연결: `apps/mobile/src/screens/GuideScreen.tsx`의 `pose`에 추정 결과를 전달하고, 실제 보행 도착 판정 후 `advanceGuidance`의 `platformReached`·`exitReached` 이벤트를 연결한다. 층·열차 이동과 추적 불가 상태도 처리한다.
+- 추적 코드: `apps/mobile/src/localization/` (`localizer.ts` 입자 필터, `pdr.ts` 걸음 감지, `usePdrSteps.ts` 걸음 센서, `virtualWalk.ts` 가상 보행).
+- 방향·도착 계산: `apps/mobile/src/navigation/` (`mapGrid.ts`, `guidance.ts`, `trip.ts`). AR 카메라 입력은 `apps/mobile/src/components/ArView.tsx`(ViroReact).
+- 연결: `apps/mobile/src/screens/GuideScreen.tsx`가 프레임·걸음을 지금 구간의 `localizer`에 넣고, `pose`로 화살표와 구간 전환(`legA → onTrain → legB → arrived`)을 정한다.
 
 입출력과 연결 예시: [방향·도착 처리](apps/mobile/src/navigation/README.md).
 
@@ -96,7 +98,7 @@ contracts 바꾸게 되면 알려주세용(코드 반영해야됨.).
 - 화면: `apps/mobile/src/screens/`.
 - 공통 UI와 카메라·나침반: `apps/mobile/src/components/`.
 - 색상·간격·글자 크기: `apps/mobile/src/theme/token.ts`.
-- 기존 API 함수와 위치 추정 출력을 사용하고, 화면 표시와 계산 로직을 분리한다.
+- 만들어 둔 API 함수와 위치 추정 출력을 사용하고, 화면 표시와 계산 로직을 분리한다.
 
 ## 백엔드 실행
 
@@ -125,7 +127,7 @@ curl --get http://localhost:8000/stations --data-urlencode 'q=일원'
 
 `GET /stations`는 등록된 역 전체를 반환한다. `q`는 최대 100자이며, 역 이름 또는 ID로 부분 검색한다. 앞뒤 공백과 영문 대소문자는 무시하고 `일원역`처럼 접미사 `역`을 붙여도 검색된다. 검색 결과가 없으면 `200`과 빈 `stations` 배열을 반환한다. 출발·도착 선택에 같은 API를 사용하며 도착역을 출발역에 따라 제한하지 않는다.
 
-역 정보 모델은 `backend/app/stations/schemas.py`에 있다. `search_stations()`는 Supabase REST API를 통해 `stations` 테이블에서 `id`, `name`, `lines`만 조회하며 DB에서 검색한다. 새 역을 테이블에 등록하면 다음 검색에 반영된다. 원본 지도 파일을 업로드하는 것만으로 역이 자동 등록되지는 않는다. 검색 목록과 실제 경로 탐색 지원 범위는 별개다. 직통 3호선 중 양쪽 지도와 방면별 승강장 연결이 있는 역 조합을 지원한다.
+역 정보 모델은 `backend/app/stations/schemas.py`에 있다. `search_stations()`는 Supabase REST API를 통해 `stations` 테이블에서 `id`, `name`, `lines`만 조회하며 DB에서 검색한다. 새 역을 테이블에 등록하면 다음 검색에 반영된다. 원본 지도 파일을 업로드하는 것만으로 역이 자동 등록되지는 않는다. 검색 목록과 실제 경로 탐색 지원 범위는 별개이며, 현재 경로는 아래의 홍제 → 잠원 한 방향만 지원한다.
 
 루트 `.env`의 `SUPABASE_URL`, `SUPABASE_SECRET_KEY`가 필요하다. `SUPABASE_SECRET_KEY`에는 서버 전용 secret 키를 사용하며 publishable 키를 넣지 않는다. 로컬 실행 시 위의 `--env-file ../.env`로 읽고, Docker Compose는 `env_file`로 주입한다. 연결 설정 누락·DB 연결 실패는 `503`, 잘못된 DB 응답은 `502`를 반환한다. 키를 프론트에 전달하지 않는다.
 
@@ -137,15 +139,28 @@ curl -X POST http://localhost:8000/routes \
   -d '{"origin_station_id":"hongje","destination_station_id":"jamwon"}'
 ```
 
-선택한 역 ID로 노선·방면·추천 승차 문과 두 역의 실제 보행 방향장을 계산한다. 응답은 `trip`과 `legs`이며 기존 mock의 `nodes`·`edges`와 다르다. 출발·도착 출구는 1번이고 직통 3호선만 지원한다.
+현재 홍제 1번 출구 → 잠원 1번 출구만 지원한다. 응답은 역(구간)마다 보행 칸 전부의 안내 방향이며, 형식은 [공유 형식](contracts/README.md)을 따른다. 로컬에서는 `data/maps/`(gitignore, 환경 변수 `MAP_DIR`로 변경 가능)에서 지도를 읽는다. Render(`RENDER=true` 자동 설정)에서는 `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `STORAGE_BUCKET=station-maps`로 버킷 루트의 `hongje.json`, `jamwon.json`을 내려받는다. 지도는 역마다 첫 요청 때 한 번 읽어 메모리에 두므로(`grid.load_map` 캐시) 지도 교체 후에는 서버를 재시작한다. 경로 방향 계산, 승강장 연결(DB), 빠른하차 정보는 요청마다 새로 한다. 그 외 역 조합은 `404`, 누락·잘못된 타입·빈 문자열 입력은 `422`, 지도 파일 없음·Storage 연결 실패·설정 누락은 `503`, 잘못된 지도 형식은 `502`를 반환한다.
 
-로컬 실행 전 v2 형식의 실제 지도 JSON을 루트 `data/maps/{station_id}.json`에 준비한다. Docker도 이 폴더를 읽기 전용으로 연결한다. 다른 폴더는 서버 `MAP_DIR`로 지정할 수 있다. 지도·비밀 키는 Git에 커밋하지 않는다. `RENDER=true` 환경에서는 기존 Storage 버킷 루트의 같은 파일명을 읽는다.
+### 말로 길 찾기와 음성 안내
 
-루트 `.env`에 `DATA_GO_KR_SERVICE_KEY`도 필요하다. DB에는 `station_platforms` 방면별 승강장 연결이 있어야 하며, v2에서 가져온 `infra/supabase/migrations/20261120220000_create_station_platforms.sql`을 새 DB에 적용한다. 기존 v2 DB에 적용된 경우 재실행하지 않는다. 지도 누락·외부 서비스 실패·미지원 여정은 오류를 반환하며 예시 경로로 대체하지 않는다.
+화면을 보지 않고 에어팟으로만 들으며 길을 찾을 수 있다.
 
-앱은 출발역 보행 → 승강장 → 탑승 → 하차 후 계단 앞 위치 확인 → 도착역 출구 보행을 표시한다. 위치 추적 연결 전이므로 도착과 탑승·하차는 사용자 확인 버튼으로 진행한다. 추천 문은 빠른하차 후보의 번호순 첫 문이며 출구까지 최단 보행을 보장하지 않는다.
+1. **시작 (말 → 경로)**: 첫 화면의 "말로 길 찾기"를 누르면 앱이 질문하고 바로 듣는다. 기기 음성 인식(`expo-speech-recognition`, 한국어)으로 만든 글자를 `POST /voice/turn`에 보낸다. 서버는 Claude(`claude-haiku-5-5`, effort `low`, 음성 대화라 지연이 짧은 모델)에 DB 역 목록과 함께 보내고, Claude는 역을 알아들으면 `find_route` 도구로 경로를 계산해 결과를 말로 설명한다. 역이 빠지면 한 가지만 되묻고, 앱은 화면을 누르지 않아도 다시 듣는다. 경로가 나오면 앱은 설명을 읽은 뒤 안내 화면으로 넘어간다.
+2. **걷는 동안 (규칙, LLM 안 씀)**: `apps/mobile/src/voice/voiceGuide.ts`가 화살표 각도를 "왼쪽으로 도세요", "앞으로 계속 가세요", "뒤로 돌아 주세요"로 바꾼다. 같은 방향이 1초 이어져야 말하고, 돌라는 말은 돌 때까지 8초마다 다시 한다. 화살표가 4초 동안 없으면 휴대폰을 들어 달라고 한다. 목적지 10m 안이면 한 번 알려 준다.
+3. **열차·도착**: 승강장에 닿으면 호선·방면·내릴 역·칸과 문 번호를 말한다. 열차 안에서는 "내렸어"라고 말하면(또는 버튼) 도착역 안내를 시작하고, 출구에 닿으면 도착을 알린다.
 
-구현·설정·오류 코드는 [경로 계산](backend/app/routing/README.md), 응답 형식은 [공유 형식](contracts/README.md)을 참고한다.
+말하기는 `GET /voice/tts?text=...`(ElevenLabs `eleven_flash_v2_5`, 한국어, mp3)를 재생한다. 같은 문장은 서버 메모리에 캐시한다. 서버나 네트워크가 안 되어 4초 안에 재생이 시작되지 않으면 기기 TTS(`expo-speech`)로 읽는다.
+
+```bash
+curl -X POST http://localhost:8000/voice/turn -H 'Content-Type: application/json' \
+  -d '{"messages":[{"role":"user","text":"홍제에서 잠원까지 가고 싶어"}]}'
+curl -o hello.mp3 --get http://localhost:8000/voice/tts --data-urlencode 'text=왼쪽으로 도세요.'
+```
+
+- 루트 `.env`에 `ANTHROPIC_API_KEY`, `ELEVENLABS_API_KEY`가 필요하다. `ELEVENLABS_VOICE_ID`로 목소리를 바꾼다(비우면 문서 예시 목소리). 키는 앱에 넣지 않는다.
+- 키가 없으면 `/voice/turn`·`/voice/tts`는 `503`이다. 앱은 말로 오류를 알리고, TTS는 기기 목소리로 바꿔 읽는다.
+- 위치 추정은 AR 카메라를 쓰므로 화면을 보지 않더라도 휴대폰은 카메라가 앞을 보게 가슴 앞에 들어야 한다. 주머니에 넣으면 화살표(방향)를 알 수 없어 "휴대폰을 들어 달라"고 안내한다. 안내 중에는 화면 잠금을 막는다.
+- 새 네이티브 모듈(음성 인식·오디오·화면 켜짐)과 마이크·음성 인식 권한이 추가되어 개발 빌드를 다시 해야 한다(`npm run ios -- --device`).
 
 백엔드 테스트는 `backend`에서 실행한다.
 
@@ -156,6 +171,6 @@ python -m unittest discover -s tests
 
 ## 현재 들어 있는 것
 
-DB 역 검색, 선택한 역의 실제 보행 경로 계산, 카메라와 안내 카드가 있다. 위치/방향 추정·자동 도착 판정·환승은 아직 구현하지 않았다. 기존 레포 코드는 담당 기능별로 검토해 가져온다.
+DB 역 검색, 홍제 → 잠원 칸별 안내 방향 계산(서버), AR + PDR 입자 필터 위치·방향 추정과 화살표, `legA → onTrain → legB → arrived` 자동 도착 판정(앱), 개발 모드 가상 보행이 있다. 실기기 센서 확인과 다른 역 조합은 아직이다.
 
 먼저 [구조](docs/architecture.md), [협업](docs/contributing.md), [공유 형식](contracts/README.md)을 읽고 작업 브랜치를 만든다.

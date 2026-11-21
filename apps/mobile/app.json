@@ -6,15 +6,38 @@
     "plugins": [
       "expo-router",
       [
-        "expo-camera",
+        "expo-font",
         {
-          "cameraPermission": "주변을 보며 길을 안내받으려면 카메라 접근을 허용해 주세요.",
-          "microphonePermission": false,
-          "recordAudioAndroid": false,
-          "barcodeScannerEnabled": false
+          "fonts": [
+            "./assets/fonts/Pretendard-Regular.otf",
+            "./assets/fonts/Pretendard-Bold.otf"
+          ]
         }
       ],
-      "expo-image"
+      [
+        "@reactvision/react-viro",
+        {
+          "telemetry": false,
+          "provider": "none",
+          "ios": {
+            "cameraUsagePermission": "주변을 보며 길을 안내받으려면 카메라 접근을 허용해 주세요."
+          }
+        }
+      ],
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "걸음을 세어 현재 위치를 추정하려면 동작 센서 접근을 허용해 주세요."
+        }
+      ],
+      "expo-image",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "말로 출발역과 도착역을 알려 주려면 마이크 접근을 허용해 주세요.",
+          "speechRecognitionPermission": "말한 역 이름을 알아들으려면 음성 인식을 허용해 주세요."
+        }
+      ]
     ],
     "version": "1.0.0",
     "orientation": "portrait",
