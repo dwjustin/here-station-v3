@@ -28,7 +28,7 @@
     "ios": "expo run:ios",
     "ios:standalone": "expo run:ios --device --configuration Release --no-bundler",
     "android": "expo run:android",
-    "test": "node --experimental-strip-types --test app.config.test.cjs src/navigation/*.test.mjs",
+    "test": "node --experimental-strip-types --test app.config.test.cjs src/navigation/*.test.mjs src/localization/*.test.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "expo lint"
   },
